@@ -1,13 +1,15 @@
 import { Suspense } from "react";
 import Link from "next/link";
-import { getServerSession } from "next-auth";
+import type { Session } from "next-auth";
 
 import { SignOutButton } from "@/components/sign-out-button";
 import { Button } from "@/components/ui/button";
-import { authOptions } from "@/lib/auth";
 
-export async function HeaderNav() {
-  const session = await getServerSession(authOptions);
+interface HeaderNavProps {
+  session: Session | null;
+}
+
+export function HeaderNav({ session }: HeaderNavProps) {
   const role = session?.user.role ?? "USER";
 
   return (
