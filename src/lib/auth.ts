@@ -1,3 +1,4 @@
+import type { Role } from "@prisma/client";
 import { compare } from "bcrypt";
 import type { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
@@ -7,9 +8,37 @@ import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 
 const credentialsSchema = z.object({
-  email: z.string().email(),
+  email: z
+    .string()
+    .trim()
+    .transform((value) => value.toLowerCase())
+    .pipe(z.email("Enter a valid email address")),
   password: z.string().min(1),
 });
+
+const isAppUser = (value: unknown): value is {
+  id: string;
+  email: string;
+  name?: string | null;
+  role: Role;
+} => {
+  if (!value || typeof value !== "object") {
+    return false;
+  }
+
+  const candidate = value as {
+    id?: unknown;
+    email?: unknown;
+    name?: unknown;
+    role?: unknown;
+  };
+
+  return (
+    typeof candidate.id === "string" &&
+    typeof candidate.email === "string" &&
+    (candidate.role === "ADMIN" || candidate.role === "USER")
+  );
+};
 
 export const authOptions: NextAuthOptions = {
   session: {
@@ -58,14 +87,14 @@ export const authOptions: NextAuthOptions = {
   ],
   callbacks: {
     async jwt({ token, user }) {
-      if (user) {
-        token.id = (user as { id: string }).id;
-        token.role = (user as { role: string }).role;
+      if (isAppUser(user)) {
+        token.id = user.id;
+        token.role = user.role;
         token.email = user.email;
-        token.name = user.name;
-      } else if (token.email && !token.role) {
+        token.name = user.name ?? undefined;
+      } else if (typeof token.email === "string" && !token.role) {
         const dbUser = await prisma.user.findUnique({
-          where: { email: token.email as string },
+          where: { email: token.email },
         });
 
         if (dbUser) {
@@ -77,14 +106,14 @@ export const authOptions: NextAuthOptions = {
 
       return token;
     },
-    async session({ session, token }) {
-      if (session.user) {
-        session.user.id = (token.id as string) ?? "";
-        session.user.email = (token.email as string) ?? session.user.email;
-        session.user.role = (token.role as "ADMIN" | "USER") ?? "USER";
-        if (typeof token.name === "string") {
-          session.user.name = token.name;
-        }
+    session({ session, token }) {
+      session.user.id = typeof token.id === "string" ? token.id : "";
+      if (typeof token.email === "string") {
+        session.user.email = token.email;
+      }
+      session.user.role = token.role ?? "USER";
+      if (typeof token.name === "string") {
+        session.user.name = token.name;
       }
 
       return session;

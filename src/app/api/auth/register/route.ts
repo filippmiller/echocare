@@ -1,3 +1,4 @@
+import type { Role } from "@prisma/client";
 import { NextResponse } from "next/server";
 import { hash } from "bcrypt";
 
@@ -8,8 +9,8 @@ const normalizeEmail = (email: string) => email.trim().toLowerCase();
 
 export async function POST(request: Request) {
   try {
-    const json = await request.json();
-    const parsed = registerSchema.safeParse(json);
+    const body = (await request.json().catch(() => null)) as unknown;
+    const parsed = registerSchema.safeParse(body);
 
     if (!parsed.success) {
       return NextResponse.json(
@@ -38,15 +39,17 @@ export async function POST(request: Request) {
       .map((value) => value.trim().toLowerCase())
       .filter(Boolean);
 
-    const role = adminEmails.includes(normalizedEmail) ? "ADMIN" : "USER";
+    const role: Role = adminEmails.includes(normalizedEmail) ? "ADMIN" : "USER";
 
     const passwordHash = await hash(password, 12);
+
+    const normalizedName = name.trim() === "" ? null : name.trim();
 
     await prisma.user.create({
       data: {
         email: normalizedEmail,
         passwordHash,
-        name: name?.trim() ?? null,
+        name: normalizedName,
         role,
       },
     });

@@ -31,7 +31,7 @@ export default function LoginPage() {
     ),
   });
 
-  const onSubmit = form.handleSubmit(async (values) => {
+  const handleSubmit = form.handleSubmit(async (values) => {
     setIsLoading(true);
     setError(null);
 
@@ -65,7 +65,7 @@ export default function LoginPage() {
         </CardHeader>
         <CardContent>
           <Form {...form}>
-            <form onSubmit={onSubmit} className="space-y-6">
+            <form onSubmit={(event) => void handleSubmit(event)} className="space-y-6">
               <FormField
                 control={form.control}
                 name="email"

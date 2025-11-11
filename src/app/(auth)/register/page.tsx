@@ -13,6 +13,15 @@ import { Input } from "@/components/ui/input";
 import type { RegisterInput } from "@/lib/validations/auth";
 import { registerSchema } from "@/lib/validations/auth";
 
+const parseErrorMessage = (value: unknown): string | null => {
+  if (typeof value !== "object" || value === null || !("error" in value)) {
+    return null;
+  }
+
+  const { error } = value as { error?: unknown };
+  return typeof error === "string" ? error : null;
+};
+
 export default function RegisterPage() {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
@@ -30,7 +39,7 @@ export default function RegisterPage() {
     ),
   });
 
-  const onSubmit = form.handleSubmit(async (values) => {
+  const handleSubmit = form.handleSubmit(async (values) => {
     setIsLoading(true);
     setError(null);
 
@@ -42,12 +51,19 @@ export default function RegisterPage() {
       });
 
       if (!response.ok) {
-        const data = await response.json();
-        setError(data.error ?? "Registration failed");
+        const raw = (await response.json().catch(() => null)) as unknown;
+        const parsedError = parseErrorMessage(raw);
+
+        if (parsedError) {
+          setError(parsedError);
+        } else {
+          setError("Registration failed");
+        }
         return;
       }
 
-      router.push(`/auth/login?email=${encodeURIComponent(values.email)}`);
+      const redirectEmail = typeof values.email === "string" ? values.email : "";
+      router.push(`/auth/login?email=${encodeURIComponent(redirectEmail)}`);
     } catch (err) {
       console.error("Register submission error", err);
       setError("An unexpected error occurred");
@@ -64,7 +80,7 @@ export default function RegisterPage() {
         </CardHeader>
         <CardContent>
           <Form {...form}>
-            <form onSubmit={onSubmit} className="space-y-6">
+            <form onSubmit={(event) => void handleSubmit(event)} className="space-y-6">
               <FormField
                 control={form.control}
                 name="name"
