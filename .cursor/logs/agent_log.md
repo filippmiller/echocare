@@ -7,3 +7,4 @@
 2025-11-11T11:41:51.6969145+03:00 - Ran prisma migrate dev --name init
 2025-11-11T11:47:00.2194339+03:00 - Added prisma singleton helper
 2025-11-11T11:49:37.7158587+03:00 - Ran pnpm lint
+2025-11-11T12:33:27.0835125+03:00 - Added NextAuth configuration, register API, auth forms, layout, middleware, dashboard/admin pages
