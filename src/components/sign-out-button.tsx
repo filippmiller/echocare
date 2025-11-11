@@ -13,7 +13,7 @@ export function SignOutButton({ variant = "outline" }: SignOutButtonProps) {
     <Button
       type="button"
       variant={variant}
-      onClick={() => void signOut({ callbackUrl: "/auth/login" })}
+      onClick={() => void signOut({ callbackUrl: "/login" })}
     >
       Sign out
     </Button>

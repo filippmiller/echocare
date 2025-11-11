@@ -17,7 +17,7 @@ export default function AuthLayout({
           <Link href="/" className="text-lg font-semibold">
             ClearMind
           </Link>
-          <Link href="/auth/login" className="text-sm font-medium text-muted-foreground hover:text-foreground">
+          <Link href="/login" className="text-sm font-medium text-muted-foreground hover:text-foreground">
             Back to login
           </Link>
         </div>

@@ -63,7 +63,7 @@ export default function RegisterPage() {
       }
 
       const redirectEmail = typeof values.email === "string" ? values.email : "";
-      router.push(`/auth/login?email=${encodeURIComponent(redirectEmail)}`);
+      router.push(`/login?email=${encodeURIComponent(redirectEmail)}`);
     } catch (err) {
       console.error("Register submission error", err);
       setError("An unexpected error occurred");
@@ -130,7 +130,7 @@ export default function RegisterPage() {
         <CardFooter className="flex flex-col items-center space-y-4">
           <p className="text-sm text-muted-foreground">
             Already have an account?{" "}
-            <Link href="/auth/login" className="text-primary underline-offset-4 hover:underline">
+            <Link href="/login" className="text-primary underline-offset-4 hover:underline">
               Sign in
             </Link>
           </p>
