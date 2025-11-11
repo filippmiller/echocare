@@ -21,6 +21,8 @@ export const metadata: Metadata = {
   description: "Secure dashboard with role-based access",
 };
 
+export const dynamic = "force-dynamic";
+
 export default async function RootLayout({
   children,
 }: Readonly<{
@@ -35,7 +37,7 @@ export default async function RootLayout({
       >
         <Providers session={session}>
           <div className="flex min-h-screen flex-col">
-            <HeaderNav />
+            <HeaderNav session={session} />
             <main className="flex-1">{children}</main>
           </div>
         </Providers>

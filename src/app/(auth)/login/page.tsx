@@ -102,7 +102,7 @@ export default function LoginPage() {
         <CardFooter className="flex flex-col items-center space-y-4">
           <p className="text-sm text-muted-foreground">
             Don&apos;t have an account?{" "}
-            <Link href="/auth/register" className="text-primary underline-offset-4 hover:underline">
+            <Link href="/register" className="text-primary underline-offset-4 hover:underline">
               Create account
             </Link>
           </p>

@@ -33,6 +33,7 @@ export default function RegisterPage() {
       () => ({
         name: "",
         email: "",
+        phone: "",
         password: "",
       }),
       []
@@ -63,7 +64,7 @@ export default function RegisterPage() {
       }
 
       const redirectEmail = typeof values.email === "string" ? values.email : "";
-      router.push(`/auth/login?email=${encodeURIComponent(redirectEmail)}`);
+      router.push(`/login?email=${encodeURIComponent(redirectEmail)}`);
     } catch (err) {
       console.error("Register submission error", err);
       setError("An unexpected error occurred");
@@ -99,9 +100,22 @@ export default function RegisterPage() {
                 name="email"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Email</FormLabel>
+                    <FormLabel>Email (optional)</FormLabel>
                     <FormControl>
-                      <Input type="email" placeholder="name@example.com" autoComplete="email" {...field} />
+                      <Input type="email" placeholder="name@example.com" autoComplete="email" {...field} value={field.value ?? ""} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="phone"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Phone (optional)</FormLabel>
+                    <FormControl>
+                      <Input type="tel" placeholder="+1234567890" autoComplete="tel" {...field} value={field.value ?? ""} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -130,7 +144,7 @@ export default function RegisterPage() {
         <CardFooter className="flex flex-col items-center space-y-4">
           <p className="text-sm text-muted-foreground">
             Already have an account?{" "}
-            <Link href="/auth/login" className="text-primary underline-offset-4 hover:underline">
+            <Link href="/login" className="text-primary underline-offset-4 hover:underline">
               Sign in
             </Link>
           </p>
