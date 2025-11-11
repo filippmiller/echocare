@@ -2,6 +2,9 @@ import { redirect } from "next/navigation";
 
 import { ProfileForm } from "@/components/profile-form";
 import { SignOutButton } from "@/components/sign-out-button";
+import { NewEntryForm } from "@/components/new-entry-form";
+import { AudioRecorder } from "@/components/audio-recorder";
+import { JournalEntriesList } from "@/components/journal-entries-list";
 import { prisma } from "@/lib/prisma";
 import { getServerAuthSession } from "@/lib/auth";
 
@@ -31,6 +34,20 @@ export default async function DashboardPage() {
     },
   });
 
+  // Fetch initial journal entries
+  const initialEntries = await prisma.journalEntry.findMany({
+    where: { userId: session.user.id },
+    take: 21,
+    orderBy: { createdAt: "desc" },
+    include: {
+      audio: true,
+    },
+  });
+
+  const hasMore = initialEntries.length > 20;
+  const entries = hasMore ? initialEntries.slice(0, 20) : initialEntries;
+  const nextCursor = hasMore ? entries[entries.length - 1]?.id ?? null : null;
+
   const greeting = user?.name
     ? `Welcome, ${user.name}!`
     : `Welcome, ${user?.email ?? "friend"}!`;
@@ -41,7 +58,15 @@ export default async function DashboardPage() {
         <h1 className="text-3xl font-semibold tracking-tight">{greeting}</h1>
         <SignOutButton />
       </div>
+
       <ProfileForm initialProfile={profile} />
+
+      <div className="grid gap-6 md:grid-cols-2">
+        <NewEntryForm onSuccess={() => window.location.reload()} />
+        <AudioRecorder onSuccess={() => window.location.reload()} />
+      </div>
+
+      <JournalEntriesList initialEntries={entries} initialNextCursor={nextCursor} />
     </div>
   );
 }
