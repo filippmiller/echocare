@@ -5,8 +5,8 @@ export const createEntrySchema = z.object({
   text: z.string().trim().min(1, "Text is required"),
   mood: z.string().trim().max(50).optional().or(z.literal("")),
   energy: z.number().int().min(0).max(100).optional(),
-  tags: z.array(z.string().trim()).default([]),
+  tags: z.array(z.string().trim()).optional(),
 });
 
-export type CreateEntryInput = z.output<typeof createEntrySchema>;
+export type CreateEntryInput = z.infer<typeof createEntrySchema>;
 
