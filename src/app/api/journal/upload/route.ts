@@ -9,7 +9,7 @@ import {
 } from "@/lib/apiErrors";
 import { prisma } from "@/lib/prisma";
 import {
-  supabaseAdmin,
+  getSupabaseAdmin,
   JOURNAL_AUDIO_BUCKET,
   MAX_AUDIO_BYTES,
   ALLOWED_AUDIO_MIME,
@@ -42,6 +42,7 @@ export async function POST(request: Request) {
     }
 
     // Check if bucket exists (basic check via listBuckets)
+    const supabaseAdmin = getSupabaseAdmin();
     const { data: buckets, error: bucketError } = await supabaseAdmin.storage.listBuckets();
     if (bucketError || !buckets?.some((b) => b.name === JOURNAL_AUDIO_BUCKET)) {
       return NextResponse.json(
