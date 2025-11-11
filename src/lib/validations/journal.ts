@@ -8,5 +8,5 @@ export const createEntrySchema = z.object({
   tags: z.array(z.string().trim()).default([]),
 });
 
-export type CreateEntryInput = z.infer<typeof createEntrySchema>;
+export type CreateEntryInput = z.output<typeof createEntrySchema>;
 
