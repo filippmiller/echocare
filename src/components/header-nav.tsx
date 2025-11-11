@@ -1,5 +1,8 @@
+"use client";
+
 import { Suspense } from "react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import type { Session } from "next-auth";
 
 import { SignOutButton } from "@/components/sign-out-button";
@@ -10,7 +13,10 @@ interface HeaderNavProps {
 }
 
 export function HeaderNav({ session }: HeaderNavProps) {
+  const pathname = usePathname();
   const role = session?.user.role ?? "USER";
+  const isLoginPage = pathname === "/login";
+  const isRegisterPage = pathname === "/register";
 
   return (
     <header className="border-b bg-background">
@@ -35,10 +41,10 @@ export function HeaderNav({ session }: HeaderNavProps) {
             </>
           ) : (
             <>
-              <Button variant="ghost" asChild>
+              <Button variant={isLoginPage ? "default" : "ghost"} asChild>
                 <Link href="/login">Sign in</Link>
               </Button>
-              <Button asChild>
+              <Button variant={isRegisterPage ? "default" : "ghost"} asChild>
                 <Link href="/register">Sign up</Link>
               </Button>
             </>

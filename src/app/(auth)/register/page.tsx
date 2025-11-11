@@ -33,6 +33,7 @@ export default function RegisterPage() {
       () => ({
         name: "",
         email: "",
+        phone: "",
         password: "",
       }),
       []
@@ -99,9 +100,22 @@ export default function RegisterPage() {
                 name="email"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Email</FormLabel>
+                    <FormLabel>Email (optional)</FormLabel>
                     <FormControl>
-                      <Input type="email" placeholder="name@example.com" autoComplete="email" {...field} />
+                      <Input type="email" placeholder="name@example.com" autoComplete="email" {...field} value={field.value ?? ""} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="phone"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Phone (optional)</FormLabel>
+                    <FormControl>
+                      <Input type="tel" placeholder="+1234567890" autoComplete="tel" {...field} value={field.value ?? ""} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
