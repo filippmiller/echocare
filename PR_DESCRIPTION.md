@@ -1,4 +1,4 @@
-# PR Description: Profile MVP + Journal MVP
+# PR: Profile MVP + Journal MVP (text + audio)
 
 ## Что сделано
 
@@ -23,7 +23,7 @@
 - ✅ Стандартизатор ошибок API (`src/lib/apiErrors.ts`): 400, 401, 403, 404, 413, 415, 500
 - ✅ Supabase admin client (`src/lib/supabaseServer.ts`) - server-only
 - ✅ Production deploy hook: автоматическое применение миграций при старте
-- ✅ Документация: `IMPLEMENTATION_REPORT.md`, `RAILWAY_MIGRATIONS.md`, `SETUP_STORAGE.md`
+- ✅ Документация: `IMPLEMENTATION_REPORT.md`, `RAILWAY_MIGRATIONS.md`, `SETUP_STORAGE.md`, `CREDENTIALS.md`
 
 ## Новые API эндпоинты
 
@@ -36,7 +36,7 @@
 - `GET /api/journal/entries?limit=20&cursor=...` - получить список записей (пагинация)
 - `POST /api/journal/upload` - загрузить аудио файл
 
-## Смоук-тест результаты
+## Результаты смоук-теста
 
 ### Auth
 - ✅ Логин под USER работает
@@ -61,7 +61,7 @@
 - ✅ Запись отображается в списке как "Audio note"
 - ✅ Неподдерживаемый MIME → 415
 - ✅ Размер > MAX_AUDIO_MB → 413
-- ✅ Отсутствие bucket → 503
+- ✅ Отсутствие bucket → 503 (проверено до создания bucket)
 
 ### Безопасность
 - ✅ `SUPABASE_SERVICE_ROLE_KEY` используется только в серверных модулях
@@ -85,13 +85,11 @@
 
 Bucket `journal-audio` создан в Supabase Storage (Private).
 
-## Checklist
+## Бэклог на следующий спринт
 
-- [x] Миграции применены на Railway
-- [x] Bucket `journal-audio` создан (Private)
-- [x] Профиль редактируется и сохраняется
-- [x] Текстовая запись создается и листится
-- [x] Аудио записывается, грузится в Storage, запись видна
-- [x] 401/413/415/503 отрабатывают корректно
-- [x] Логи без секретов, Service Role — только на сервере
-
+- Transcription воркер (Railway): очередь Job(type='transcription'), signed URL из Storage, вызов STT, запись текста в JournalEntry.text
+- Рейт-лимиты/защита API: лимит по пользователю (60 req/мин для записи журнала)
+- RLS-план: включить RLS на Profile, JournalEntry, AudioAsset с политиками user_id = auth.uid()
+- Аудит-лог: AuditEvent(userId, action, entity, meta, createdAt)
+- Экспорт/резервное копирование: генерация ZIP с JSON записей + аудио
+- i18n каркас: заготовка словарей (ru, en)
