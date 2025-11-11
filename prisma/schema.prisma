@@ -14,14 +14,37 @@ enum Role {
   USER
 }
 
+enum Gender {
+  MALE
+  FEMALE
+  OTHER
+  UNKNOWN
+}
+
 model User {
-  id            String   @id @default(cuid())
-  email         String?  @unique
-  phone         String?  @unique
+  id            String    @id @default(cuid())
+  email         String?   @unique
+  phone         String?   @unique
   name          String?
   passwordHash  String
-  role          Role     @default(USER)
+  role          Role      @default(USER)
   emailVerified DateTime?
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  profile       Profile?
+}
+
+model Profile {
+  id        String    @id @default(cuid())
+  userId    String    @unique
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  fullName  String?
+  birthDate DateTime?
+  city      String?
+  phone     String?
+  locale    String?
+  timezone  String?
+  gender    Gender?   @default(UNKNOWN)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
 }

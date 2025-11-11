@@ -2,6 +2,7 @@ import type { Role } from "@prisma/client";
 import { NextResponse } from "next/server";
 import { hash } from "bcrypt";
 
+import { badRequest, internalServerError } from "@/lib/apiErrors";
 import { prisma } from "@/lib/prisma";
 import { registerSchema } from "@/lib/validations/auth";
 
@@ -13,10 +14,7 @@ export async function POST(request: Request) {
     const parsed = registerSchema.safeParse(body);
 
     if (!parsed.success) {
-      return NextResponse.json(
-        { error: "Invalid input", issues: parsed.error.issues },
-        { status: 400 }
-      );
+      return badRequest("Invalid input", parsed.error.issues);
     }
 
     const { email, password, name, phone } = parsed.data;
@@ -24,10 +22,7 @@ export async function POST(request: Request) {
     const normalizedPhone = phone ? phone.trim() : null;
 
     if (!normalizedEmail && !normalizedPhone) {
-      return NextResponse.json(
-        { error: "Either email or phone number is required" },
-        { status: 400 }
-      );
+      return badRequest("Either email or phone number is required");
     }
 
     // Check if user exists by email or phone
@@ -72,6 +67,6 @@ export async function POST(request: Request) {
     return NextResponse.json({ success: true }, { status: 201 });
   } catch (error) {
     console.error("Register error", error);
-    return NextResponse.json({ error: "Server error" }, { status: 500 });
+    return internalServerError("Server error");
   }
 }
