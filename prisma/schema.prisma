@@ -14,14 +14,90 @@ enum Role {
   USER
 }
 
+enum Gender {
+  MALE
+  FEMALE
+  OTHER
+  UNKNOWN
+}
+
+enum JobStatus {
+  PENDING
+  PROCESSING
+  DONE
+  FAILED
+}
+
+enum EntryType {
+  TEXT
+  AUDIO
+}
+
 model User {
-  id            String   @id @default(cuid())
-  email         String?  @unique
-  phone         String?  @unique
-  name          String?
-  passwordHash  String
-  role          Role     @default(USER)
-  emailVerified DateTime?
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id             String         @id @default(cuid())
+  email          String?        @unique
+  phone          String?        @unique
+  name           String?
+  passwordHash   String
+  role           Role           @default(USER)
+  emailVerified  DateTime?
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+  profile        Profile?
+  journalEntries JournalEntry[]
+}
+
+model Profile {
+  id        String    @id @default(cuid())
+  userId    String    @unique
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  fullName  String?
+  birthDate DateTime?
+  city      String?
+  phone     String?
+  locale    String?
+  timezone  String?
+  gender    Gender?   @default(UNKNOWN)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+}
+
+model AudioAsset {
+  id             String         @id @default(cuid())
+  userId         String
+  bucket         String
+  path           String
+  mime           String
+  size           Int
+  duration       Int?
+  createdAt      DateTime       @default(now())
+  journalEntries JournalEntry[]
+}
+
+model JournalEntry {
+  id        String      @id @default(cuid())
+  userId    String
+  user      User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type      EntryType
+  title     String?
+  text      String?
+  mood      String?
+  energy    Int?
+  tags      String[]    @default([])
+  audioId   String?
+  audio     AudioAsset? @relation(fields: [audioId], references: [id], onDelete: SetNull)
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+  jobs      Job[]
+}
+
+model Job {
+  id        String       @id @default(cuid())
+  type      String
+  status    JobStatus    @default(PENDING)
+  payload   Json
+  entryId   String
+  entry     JournalEntry @relation(fields: [entryId], references: [id], onDelete: Cascade)
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
 }

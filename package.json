@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "next dev -p 3005",
     "build": "prisma generate && next build",
-    "start": "next start",
+    "start": "pnpm prisma migrate deploy && next start -p ${PORT:-3000}",
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
     "prisma:studio": "prisma studio",
@@ -17,6 +17,7 @@
     "@prisma/client": "^6.19.0",
     "@radix-ui/react-label": "^2.1.8",
     "@radix-ui/react-slot": "^1.2.4",
+    "@supabase/supabase-js": "^2.45.4",
     "bcrypt": "^6.0.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
