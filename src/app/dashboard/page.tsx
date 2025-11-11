@@ -62,8 +62,8 @@ export default async function DashboardPage() {
       <ProfileForm initialProfile={profile} />
 
       <div className="grid gap-6 md:grid-cols-2">
-        <NewEntryForm onSuccess={() => window.location.reload()} />
-        <AudioRecorder onSuccess={() => window.location.reload()} />
+        <NewEntryForm onSuccess={() => {}} />
+        <AudioRecorder onSuccess={() => {}} />
       </div>
 
       <JournalEntriesList initialEntries={entries} initialNextCursor={nextCursor} />
