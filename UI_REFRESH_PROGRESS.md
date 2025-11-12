@@ -51,6 +51,11 @@
 - User menu with avatar dropdown
 - Navigation links for logged-in users
 
+**Next Steps:**
+- Fix avatar display (check Supabase Storage configuration)
+- Fix audio playback (check signed URLs and CORS)
+- Refactor forms to shadcn/ui style
+
 ---
 
 ## 📝 Detailed Steps
