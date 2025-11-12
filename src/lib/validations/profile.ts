@@ -5,8 +5,8 @@ export const profileSchema = z.object({
   birthDate: z.string().optional().or(z.literal("")),
   city: z.string().trim().max(100).optional().or(z.literal("")),
   phone: z.string().trim().max(20).optional().or(z.literal("")),
-  locale: z.string().trim().max(10).optional().or(z.literal("")),
-  timezone: z.string().trim().max(50).optional().or(z.literal("")),
+  locale: z.enum(["en", "ru"]).optional(),
+  avatarUrl: z.string().trim().max(500).optional().or(z.literal("")),
   gender: z.enum(["MALE", "FEMALE", "OTHER", "UNKNOWN"]).optional(),
 });
 

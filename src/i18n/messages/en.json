@@ -1,0 +1,68 @@
+{
+  "common": {
+    "appName": "ClearMind",
+    "welcome": "Welcome",
+    "save": "Save",
+    "saving": "Saving...",
+    "saved": "Saved",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit",
+    "refresh": "Refresh",
+    "loading": "Loading...",
+    "error": "Error",
+    "success": "Success"
+  },
+  "auth": {
+    "signIn": "Sign in",
+    "signUp": "Sign up",
+    "signOut": "Sign out",
+    "email": "Email",
+    "password": "Password",
+    "name": "Name",
+    "dontHaveAccount": "Don't have an account?",
+    "createAccount": "Create account",
+    "alreadyHaveAccount": "Already have an account?",
+    "invalidEmailOrPassword": "Invalid email or password"
+  },
+  "profile": {
+    "title": "Profile",
+    "fullName": "Full Name",
+    "fromRegistration": "(from registration)",
+    "avatar": "Avatar",
+    "birthDate": "Birth Date",
+    "city": "City",
+    "phone": "Phone",
+    "locale": "Locale",
+    "gender": "Gender",
+    "genderUnknown": "Unknown",
+    "genderMale": "Male",
+    "genderFemale": "Female",
+    "genderOther": "Other"
+  },
+  "journal": {
+    "newEntry": "New Entry",
+    "title": "Title (optional)",
+    "text": "Text",
+    "mood": "Mood (optional)",
+    "energy": "Energy (0-100, optional)",
+    "recordAudio": "Record Audio",
+    "record": "Record",
+    "stop": "Stop",
+    "recording": "Recording...",
+    "uploading": "Uploading...",
+    "myEntries": "My Entries",
+    "noEntries": "No entries yet. Create your first entry above!",
+    "loadMore": "Load More",
+    "audioNote": "Audio note",
+    "play": "Play",
+    "pause": "Pause"
+  },
+  "errors": {
+    "failedToLoad": "Failed to load",
+    "failedToSave": "Failed to save",
+    "failedToUpload": "Failed to upload",
+    "unexpectedError": "An unexpected error occurred"
+  }
+}
+

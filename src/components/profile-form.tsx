@@ -11,6 +11,8 @@ import { Input } from "@/components/ui/input";
 import type { ProfileInput } from "@/lib/validations/profile";
 import { profileSchema } from "@/lib/validations/profile";
 import type { Gender } from "@prisma/client";
+import { predictGenderFromName } from "@/lib/genderPrediction";
+import { searchCitiesFallback } from "@/lib/citySearch";
 
 interface Profile {
   id: string;
@@ -19,51 +21,113 @@ interface Profile {
   city: string | null;
   phone: string | null;
   locale: string | null;
-  timezone: string | null;
+  avatarUrl: string | null;
   gender: Gender | null;
 }
 
 interface ProfileFormProps {
   initialProfile: Profile | null;
+  userName: string | null; // User.name from database
 }
 
-export function ProfileForm({ initialProfile }: ProfileFormProps) {
+export function ProfileForm({ initialProfile, userName }: ProfileFormProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(initialProfile?.avatarUrl ?? null);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const [citySuggestions, setCitySuggestions] = useState<Array<{ name: string; country: string; fullName: string }>>([]);
+  const [showCitySuggestions, setShowCitySuggestions] = useState(false);
+
+  // Use User.name if available, otherwise use Profile.fullName
+  const displayName = userName ?? initialProfile?.fullName ?? "";
+  
+  // Predict gender from name if not set
+  const predictedGender = useMemo(() => {
+    if (initialProfile?.gender && initialProfile.gender !== "UNKNOWN") {
+      return initialProfile.gender;
+    }
+    return predictGenderFromName(displayName);
+  }, [displayName, initialProfile?.gender]);
 
   const form = useForm<ProfileInput>({
     resolver: zodResolver(profileSchema),
     defaultValues: useMemo(
       () => ({
-        fullName: initialProfile?.fullName ?? "",
+        fullName: displayName,
         birthDate: initialProfile?.birthDate
           ? new Date(initialProfile.birthDate).toISOString().split("T")[0]
           : "",
         city: initialProfile?.city ?? "",
         phone: initialProfile?.phone ?? "",
-        locale: initialProfile?.locale ?? "",
-        timezone: initialProfile?.timezone ?? "",
-        gender: initialProfile?.gender ?? "UNKNOWN",
+        locale: (initialProfile?.locale === "en" || initialProfile?.locale === "ru") ? initialProfile.locale : undefined,
+        avatarUrl: initialProfile?.avatarUrl ?? "",
+        gender: predictedGender,
       }),
-      [initialProfile]
+      [initialProfile, displayName, predictedGender]
     ),
   });
 
   useEffect(() => {
-    if (initialProfile) {
-      form.reset({
-        fullName: initialProfile.fullName ?? "",
-        birthDate: initialProfile.birthDate
-          ? new Date(initialProfile.birthDate).toISOString().split("T")[0]
-          : "",
-        city: initialProfile.city ?? "",
-        phone: initialProfile.phone ?? "",
-        locale: initialProfile.locale ?? "",
-        timezone: initialProfile.timezone ?? "",
-        gender: initialProfile.gender ?? "UNKNOWN",
-      });
+    const displayName = userName ?? initialProfile?.fullName ?? "";
+    form.reset({
+      fullName: displayName,
+      birthDate: initialProfile?.birthDate
+        ? new Date(initialProfile.birthDate).toISOString().split("T")[0]
+        : "",
+      city: initialProfile?.city ?? "",
+      phone: initialProfile?.phone ?? "",
+      locale: (initialProfile?.locale === "en" || initialProfile?.locale === "ru") ? initialProfile.locale : undefined,
+      avatarUrl: initialProfile?.avatarUrl ?? "",
+      gender: predictedGender,
+    });
+    setAvatarUrl(initialProfile?.avatarUrl ?? null);
+  }, [initialProfile, userName, form, predictedGender]);
+
+  const handleCityChange = (value: string) => {
+    form.setValue("city", value);
+    if (value.length >= 2) {
+      const suggestions = searchCitiesFallback(value);
+      setCitySuggestions(suggestions);
+      setShowCitySuggestions(suggestions.length > 0);
+    } else {
+      setCitySuggestions([]);
+      setShowCitySuggestions(false);
     }
-  }, [initialProfile, form]);
+  };
+
+  const handleCitySelect = (fullName: string) => {
+    form.setValue("city", fullName);
+    setShowCitySuggestions(false);
+    setCitySuggestions([]);
+  };
+
+  const handleAvatarUpload = async (file: File) => {
+    setUploadingAvatar(true);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+
+      const response = await fetch("/api/profile/avatar", {
+        method: "POST",
+        body: formData,
+      });
+
+      if (!response.ok) {
+        const data = (await response.json().catch(() => null)) as { error?: string } | null;
+        alert(data?.error ?? "Failed to upload avatar");
+        return;
+      }
+
+      const result = (await response.json()) as { avatarUrl: string };
+      setAvatarUrl(result.avatarUrl);
+      form.setValue("avatarUrl", result.avatarUrl);
+    } catch (err) {
+      console.error("Avatar upload error", err);
+      alert("An unexpected error occurred while uploading avatar");
+    } finally {
+      setUploadingAvatar(false);
+    }
+  };
 
   const handleSubmit = form.handleSubmit(async (values) => {
     setIsLoading(true);
@@ -74,6 +138,8 @@ export function ProfileForm({ initialProfile }: ProfileFormProps) {
       const payload = {
         ...values,
         birthDate: values.birthDate ? new Date(values.birthDate).toISOString() : undefined,
+        // Don't send fullName if it matches userName (already in system)
+        fullName: values.fullName && values.fullName !== userName ? values.fullName : undefined,
       };
 
       const response = await fetch("/api/profile", {
@@ -113,7 +179,57 @@ export function ProfileForm({ initialProfile }: ProfileFormProps) {
                 <FormItem>
                   <FormLabel>Full Name</FormLabel>
                   <FormControl>
-                    <Input placeholder="John Doe" {...field} value={field.value ?? ""} />
+                    <div className="flex items-center gap-2">
+                      <Input placeholder="John Doe" {...field} value={field.value ?? ""} readOnly={!!userName} />
+                      {userName && (
+                        <span className="text-xs text-muted-foreground">(from registration)</span>
+                      )}
+                    </div>
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="avatarUrl"
+              render={() => (
+                <FormItem>
+                  <FormLabel>Avatar</FormLabel>
+                  <FormControl>
+                    <div className="flex items-center gap-4">
+                      {avatarUrl ? (
+                        <img
+                          src={avatarUrl}
+                          alt="Avatar"
+                          className="h-20 w-20 rounded-full object-cover border-2 border-border"
+                          onError={(e) => {
+                            console.error("Avatar image failed to load:", avatarUrl);
+                            e.currentTarget.style.display = "none";
+                          }}
+                        />
+                      ) : (
+                        <div className="h-20 w-20 rounded-full border-2 border-border bg-muted flex items-center justify-center">
+                          <span className="text-xs text-muted-foreground">Avatar</span>
+                        </div>
+                      )}
+                      <div className="flex flex-col gap-2">
+                        <input
+                          type="file"
+                          accept="image/jpeg,image/png,image/webp,image/gif"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (file) {
+                              void handleAvatarUpload(file);
+                            }
+                          }}
+                          disabled={uploadingAvatar}
+                          className="text-sm file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-primary file:text-primary-foreground hover:file:bg-primary/90 disabled:opacity-50"
+                        />
+                        {uploadingAvatar && <span className="text-xs text-muted-foreground">Uploading...</span>}
+                      </div>
+                    </div>
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -141,7 +257,44 @@ export function ProfileForm({ initialProfile }: ProfileFormProps) {
                 <FormItem>
                   <FormLabel>City</FormLabel>
                   <FormControl>
-                    <Input placeholder="New York" {...field} value={field.value ?? ""} />
+                    <div className="relative">
+                      <Input
+                        placeholder="New York"
+                        {...field}
+                        value={field.value ?? ""}
+                        onChange={(e) => {
+                          field.onChange(e);
+                          handleCityChange(e.target.value);
+                        }}
+                        onFocus={() => {
+                          if (citySuggestions.length > 0) {
+                            setShowCitySuggestions(true);
+                          }
+                        }}
+                        onBlur={() => {
+                          // Delay hiding suggestions to allow click
+                          setTimeout(() => setShowCitySuggestions(false), 200);
+                        }}
+                      />
+                      {showCitySuggestions && citySuggestions.length > 0 && (
+                        <div className="absolute z-10 w-full mt-1 bg-popover border border-border rounded-md shadow-lg max-h-60 overflow-auto">
+                          {citySuggestions.map((suggestion, index) => (
+                            <button
+                              key={index}
+                              type="button"
+                              className="w-full text-left px-4 py-2 hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground"
+                              onMouseDown={(e) => {
+                                e.preventDefault();
+                                handleCitySelect(suggestion.fullName);
+                              }}
+                            >
+                              <div className="font-medium">{suggestion.name}</div>
+                              <div className="text-xs text-muted-foreground">{suggestion.country}</div>
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -170,20 +323,6 @@ export function ProfileForm({ initialProfile }: ProfileFormProps) {
                   <FormLabel>Locale</FormLabel>
                   <FormControl>
                     <Input placeholder="en-US" {...field} value={field.value ?? ""} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="timezone"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Timezone</FormLabel>
-                  <FormControl>
-                    <Input placeholder="America/New_York" {...field} value={field.value ?? ""} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>

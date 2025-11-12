@@ -11,12 +11,13 @@ import { getServerAuthSession } from "@/lib/auth";
 export const dynamic = "force-dynamic";
 
 export default async function DashboardPage() {
-  try {
-    const session = await getServerAuthSession();
+  const session = await getServerAuthSession();
 
-    if (!session) {
-      redirect("/login");
-    }
+  if (!session) {
+    redirect("/login");
+  }
+
+  try {
 
     const user = await prisma.user.findUnique({
       where: { id: session.user.id },
@@ -48,18 +49,24 @@ export default async function DashboardPage() {
     }
 
     // Fetch initial journal entries
-    const initialEntries = await prisma.journalEntry.findMany({
+    const fetchedEntries = await prisma.journalEntry.findMany({
       where: { userId: session.user.id },
       take: 21,
       orderBy: { createdAt: "desc" },
-      include: {
-        audio: true,
-      },
+        include: {
+          audio: {
+            select: {
+              id: true,
+              duration: true,
+              mime: true,
+            },
+          },
+        },
     });
 
-    const hasMore = initialEntries.length > 20;
-    const entries = hasMore ? initialEntries.slice(0, 20) : initialEntries;
-    const nextCursor = hasMore ? entries[entries.length - 1]?.id ?? null : null;
+    const hasMore = fetchedEntries.length > 20;
+    const initialEntries = hasMore ? fetchedEntries.slice(0, 20) : fetchedEntries;
+    const nextCursor = hasMore ? initialEntries[initialEntries.length - 1]?.id ?? null : null;
 
     const greeting = user?.name
       ? `Welcome, ${user.name}!`
@@ -72,14 +79,14 @@ export default async function DashboardPage() {
           <SignOutButton />
         </div>
 
-        <ProfileForm initialProfile={profile} />
+        <ProfileForm initialProfile={profile} userName={user?.name ?? null} />
 
         <div className="grid gap-6 md:grid-cols-2">
           <NewEntryForm />
           <AudioRecorder />
         </div>
 
-        <JournalEntriesList initialEntries={entries} initialNextCursor={nextCursor} />
+        <JournalEntriesList initialEntries={initialEntries} initialNextCursor={nextCursor} />
       </div>
     );
   } catch (error) {

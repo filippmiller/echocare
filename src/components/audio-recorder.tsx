@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -10,6 +10,7 @@ export function AudioRecorder() {
   const [isRecording, setIsRecording] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState(false);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
 
@@ -64,10 +65,18 @@ export function AudioRecorder() {
       if (!response.ok) {
         const data = (await response.json().catch(() => null)) as { error?: string } | null;
         setError(data?.error ?? "Failed to upload audio");
+        setSuccess(false);
         return;
       }
 
+      setSuccess(true);
+      setError(null);
+      
+      // Refresh the page to show new entry
       router.refresh();
+      
+      // Also trigger a custom event for the entries list to refresh
+      window.dispatchEvent(new CustomEvent("journalEntryCreated"));
     } catch (err) {
       console.error("Upload error", err);
       setError("An unexpected error occurred");
@@ -96,6 +105,7 @@ export function AudioRecorder() {
           {isUploading && <span className="text-sm text-muted-foreground">Uploading...</span>}
         </div>
         {error && <p className="text-sm text-destructive">{error}</p>}
+        {success && <p className="text-sm text-green-600">Audio uploaded successfully!</p>}
       </CardContent>
     </Card>
   );

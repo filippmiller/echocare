@@ -55,17 +55,36 @@ export async function GET(request: Request) {
     const limit = Number.parseInt(searchParams.get("limit") ?? "20", 10);
     const cursor = searchParams.get("cursor") ?? undefined;
 
-    const where = {
+    // For cursor-based pagination with string IDs, we need to find entries created before the cursor entry
+    let where: { userId: string; createdAt?: { lt: Date } } = {
       userId: session.user.id,
-      ...(cursor ? { id: { lt: cursor } } : {}),
     };
+
+    if (cursor) {
+      // Find the cursor entry to get its createdAt timestamp
+      const cursorEntry = await prisma.journalEntry.findUnique({
+        where: { id: cursor },
+        select: { createdAt: true },
+      });
+
+      if (cursorEntry) {
+        where.createdAt = { lt: cursorEntry.createdAt };
+      }
+    }
 
     const entries = await prisma.journalEntry.findMany({
       where,
       take: limit + 1,
       orderBy: { createdAt: "desc" },
       include: {
-        audio: true,
+        audio: {
+          select: {
+            id: true,
+            duration: true,
+            mime: true,
+            path: true,
+          },
+        },
       },
     });
 

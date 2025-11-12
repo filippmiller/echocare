@@ -41,12 +41,22 @@ export async function POST(request: Request) {
       return unsupportedMediaType(`MIME type ${file.type} is not allowed. Allowed types: ${ALLOWED_AUDIO_MIME.join(", ")}`);
     }
 
-    // Check if bucket exists (basic check via listBuckets)
+    // Check if bucket exists
     const supabaseAdmin = getSupabaseAdmin();
     const { data: buckets, error: bucketError } = await supabaseAdmin.storage.listBuckets();
-    if (bucketError || !buckets?.some((b) => b.name === JOURNAL_AUDIO_BUCKET)) {
+    
+    if (bucketError) {
+      console.error("Supabase listBuckets error:", bucketError);
       return NextResponse.json(
-        { error: "Storage bucket is not available. Please contact support." },
+        { error: `Storage error: ${bucketError.message}` },
+        { status: 503 }
+      );
+    }
+    
+    if (!buckets?.some((b) => b.name === JOURNAL_AUDIO_BUCKET)) {
+      console.error(`Bucket '${JOURNAL_AUDIO_BUCKET}' not found. Available buckets:`, buckets?.map((b) => b.name).join(", ") ?? "none");
+      return NextResponse.json(
+        { error: `Storage bucket '${JOURNAL_AUDIO_BUCKET}' is not available. Please create it in Supabase Dashboard.` },
         { status: 503 }
       );
     }
@@ -70,8 +80,12 @@ export async function POST(request: Request) {
       });
 
     if (uploadError) {
-      console.error("Supabase upload error", uploadError);
-      return internalServerError("Failed to upload file to storage");
+      console.error("Supabase upload error:", uploadError);
+      console.error("Upload details:", { path, bucket: JOURNAL_AUDIO_BUCKET, fileSize: file.size, mimeType: file.type });
+      return NextResponse.json(
+        { error: `Upload failed: ${uploadError.message}` },
+        { status: 500 }
+      );
     }
 
     // Create AudioAsset
@@ -100,8 +114,14 @@ export async function POST(request: Request) {
 
     return NextResponse.json(entry, { status: 201 });
   } catch (error) {
-    console.error("Upload audio error", error);
-    return internalServerError("Failed to upload audio");
+    console.error("Upload audio error:", error);
+    const errorMessage = error instanceof Error ? error.message : "Unknown error";
+    const errorStack = error instanceof Error ? error.stack : undefined;
+    console.error("Error stack:", errorStack);
+    return NextResponse.json(
+      { error: `Failed to upload audio: ${errorMessage}` },
+      { status: 500 }
+    );
   }
 }
 

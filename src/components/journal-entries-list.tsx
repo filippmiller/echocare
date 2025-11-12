@@ -1,8 +1,10 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
+import { useTranslations } from "next-intl";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { AudioPlayer } from "@/components/audio-player";
 import type { EntryType } from "@prisma/client";
 
 interface JournalEntry {
@@ -15,7 +17,9 @@ interface JournalEntry {
   tags: string[];
   audioId: string | null;
   audio: {
+    id: string;
     duration: number | null;
+    mime: string | null;
   } | null;
   createdAt: Date;
 }
@@ -26,9 +30,44 @@ interface JournalEntriesListProps {
 }
 
 export function JournalEntriesList({ initialEntries, initialNextCursor }: JournalEntriesListProps) {
+  const t = useTranslations("journal");
+  const tCommon = useTranslations("common");
   const [entries, setEntries] = useState<JournalEntry[]>(initialEntries);
   const [nextCursor, setNextCursor] = useState<string | null>(initialNextCursor);
   const [isLoading, setIsLoading] = useState(false);
+
+  const refresh = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      const response = await fetch("/api/journal/entries?limit=20");
+      if (!response.ok) return;
+
+      const data = (await response.json()) as {
+        entries: JournalEntry[];
+        nextCursor: string | null;
+        hasMore: boolean;
+      };
+
+      setEntries(data.entries);
+      setNextCursor(data.nextCursor);
+    } catch (err) {
+      console.error("Refresh error", err);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  // Listen for new entry creation events
+  useEffect(() => {
+    const handleEntryCreated = () => {
+      void refresh();
+    };
+
+    window.addEventListener("journalEntryCreated", handleEntryCreated);
+    return () => {
+      window.removeEventListener("journalEntryCreated", handleEntryCreated);
+    };
+  }, [refresh]);
 
   const loadMore = async () => {
     if (!nextCursor || isLoading) return;
@@ -53,40 +92,19 @@ export function JournalEntriesList({ initialEntries, initialNextCursor }: Journa
     }
   };
 
-  const refresh = async () => {
-    setIsLoading(true);
-    try {
-      const response = await fetch("/api/journal/entries?limit=20");
-      if (!response.ok) return;
-
-      const data = (await response.json()) as {
-        entries: JournalEntry[];
-        nextCursor: string | null;
-        hasMore: boolean;
-      };
-
-      setEntries(data.entries);
-      setNextCursor(data.nextCursor);
-    } catch (err) {
-      console.error("Refresh error", err);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
   return (
     <Card>
       <CardHeader>
         <div className="flex items-center justify-between">
-          <CardTitle>My Entries</CardTitle>
+          <CardTitle>{t("myEntries")}</CardTitle>
           <Button variant="outline" size="sm" onClick={() => void refresh()} disabled={isLoading}>
-            Refresh
+            {tCommon("refresh")}
           </Button>
         </div>
       </CardHeader>
       <CardContent>
         {entries.length === 0 ? (
-          <p className="text-sm text-muted-foreground">No entries yet. Create your first entry above!</p>
+          <p className="text-sm text-muted-foreground">{t("noEntries")}</p>
         ) : (
           <div className="space-y-4">
             {entries.map((entry) => (
@@ -106,11 +124,10 @@ export function JournalEntriesList({ initialEntries, initialNextCursor }: Journa
                       <p className="text-sm text-muted-foreground">
                         {entry.text.length > 120 ? `${entry.text.substring(0, 120)}...` : entry.text}
                       </p>
-                    ) : entry.type === "AUDIO" ? (
-                      <p className="text-sm text-muted-foreground">
-                        Audio note
-                        {entry.audio?.duration ? ` (${entry.audio.duration}s)` : ""}
-                      </p>
+                    ) : entry.type === "AUDIO" && entry.audioId && entry.audio ? (
+                      <div className="mt-2">
+                        <AudioPlayer audioId={entry.audio.id} duration={entry.audio.duration} />
+                      </div>
                     ) : null}
                     {entry.mood && (
                       <span className="inline-block mt-2 text-xs px-2 py-1 bg-muted rounded">
@@ -123,7 +140,7 @@ export function JournalEntriesList({ initialEntries, initialNextCursor }: Journa
             ))}
             {nextCursor && (
               <Button variant="outline" onClick={() => void loadMore()} disabled={isLoading} className="w-full">
-                {isLoading ? "Loading..." : "Load More"}
+                {isLoading ? tCommon("loading") : t("loadMore")}
               </Button>
             )}
           </div>

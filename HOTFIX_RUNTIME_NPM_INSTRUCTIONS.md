@@ -127,3 +127,4 @@ railway run npx prisma migrate deploy
 **Коммит:** `94cbdba`  
 **Дата:** 12 ноября 2025
 
+

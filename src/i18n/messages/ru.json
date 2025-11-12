@@ -1,0 +1,68 @@
+{
+  "common": {
+    "appName": "ClearMind",
+    "welcome": "Добро пожаловать",
+    "save": "Сохранить",
+    "saving": "Сохранение...",
+    "saved": "Сохранено",
+    "cancel": "Отмена",
+    "delete": "Удалить",
+    "edit": "Редактировать",
+    "refresh": "Обновить",
+    "loading": "Загрузка...",
+    "error": "Ошибка",
+    "success": "Успешно"
+  },
+  "auth": {
+    "signIn": "Войти",
+    "signUp": "Регистрация",
+    "signOut": "Выйти",
+    "email": "Электронная почта",
+    "password": "Пароль",
+    "name": "Имя",
+    "dontHaveAccount": "Нет аккаунта?",
+    "createAccount": "Создать аккаунт",
+    "alreadyHaveAccount": "Уже есть аккаунт?",
+    "invalidEmailOrPassword": "Неверный email или пароль"
+  },
+  "profile": {
+    "title": "Профиль",
+    "fullName": "Полное имя",
+    "fromRegistration": "(из регистрации)",
+    "avatar": "Аватар",
+    "birthDate": "Дата рождения",
+    "city": "Город",
+    "phone": "Телефон",
+    "locale": "Локаль",
+    "gender": "Пол",
+    "genderUnknown": "Не указан",
+    "genderMale": "Мужской",
+    "genderFemale": "Женский",
+    "genderOther": "Другой"
+  },
+  "journal": {
+    "newEntry": "Новая запись",
+    "title": "Заголовок (необязательно)",
+    "text": "Текст",
+    "mood": "Настроение (необязательно)",
+    "energy": "Энергия (0-100, необязательно)",
+    "recordAudio": "Записать аудио",
+    "record": "Записать",
+    "stop": "Остановить",
+    "recording": "Запись...",
+    "uploading": "Загрузка...",
+    "myEntries": "Мои записи",
+    "noEntries": "Записей пока нет. Создайте первую запись выше!",
+    "loadMore": "Загрузить еще",
+    "audioNote": "Аудиозапись",
+    "play": "Воспроизвести",
+    "pause": "Пауза"
+  },
+  "errors": {
+    "failedToLoad": "Не удалось загрузить",
+    "failedToSave": "Не удалось сохранить",
+    "failedToUpload": "Не удалось загрузить",
+    "unexpectedError": "Произошла непредвиденная ошибка"
+  }
+}
+

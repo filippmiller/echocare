@@ -45,7 +45,12 @@ export function NewEntryForm() {
       }
 
       form.reset();
+      
+      // Refresh the page to show new entry
       router.refresh();
+      
+      // Also trigger a custom event for the entries list to refresh
+      window.dispatchEvent(new CustomEvent("journalEntryCreated"));
     } catch (err) {
       console.error("Create entry error", err);
       setError("An unexpected error occurred");

@@ -208,3 +208,4 @@ docker run -p 3000:3000 -e PORT=3000 -e DATABASE_URL="..." clear-mind-app
 **Коммит:** `9873970`  
 **Дата:** 12 ноября 2025
 
+

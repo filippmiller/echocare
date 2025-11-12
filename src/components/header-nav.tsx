@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import type { Session } from "next-auth";
 
 import { SignOutButton } from "@/components/sign-out-button";
+import { LanguageSwitcher } from "@/components/language-switcher";
 import { Button } from "@/components/ui/button";
 
 interface HeaderNavProps {
@@ -25,6 +26,7 @@ export function HeaderNav({ session }: HeaderNavProps) {
           ClearMind
         </Link>
         <nav className="flex items-center gap-3">
+          <LanguageSwitcher />
           {session ? (
             <>
               <Link href="/dashboard" className="text-sm font-medium hover:underline">

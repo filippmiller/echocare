@@ -54,7 +54,7 @@ export async function PUT(request: Request) {
       city: data.city && data.city.trim() !== "" ? data.city.trim() : null,
       phone: data.phone && data.phone.trim() !== "" ? data.phone.trim() : null,
       locale: data.locale && data.locale.trim() !== "" ? data.locale.trim() : null,
-      timezone: data.timezone && data.timezone.trim() !== "" ? data.timezone.trim() : null,
+      avatarUrl: data.avatarUrl && data.avatarUrl.trim() !== "" ? data.avatarUrl.trim() : null,
       gender: data.gender ?? "UNKNOWN",
     };
 
