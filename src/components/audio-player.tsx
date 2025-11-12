@@ -167,9 +167,6 @@ export function AudioPlayer({ audioId, duration }: AudioPlayerProps) {
       });
     });
     
-    // Explicitly load the audio
-    audio.load();
-
     // Ensure audioRef.current is still valid
     if (!audioRef.current) {
       const errorMsg = "Audio element not available";
@@ -179,7 +176,7 @@ export function AudioPlayer({ audioId, duration }: AudioPlayerProps) {
     }
 
     try {
-      // Ensure audio is ready
+      // Wait for audio to be ready (don't call load() again - it's already called implicitly when src is set)
       if (audioRef.current.readyState < 2) {
         await new Promise<void>((resolve, reject) => {
           const audio = audioRef.current;
@@ -187,9 +184,14 @@ export function AudioPlayer({ audioId, duration }: AudioPlayerProps) {
             reject(new Error("Audio element not available"));
             return;
           }
+          // Check if already ready
+          if (audio.readyState >= 2) {
+            resolve();
+            return;
+          }
           audio.addEventListener("canplay", () => resolve(), { once: true });
           audio.addEventListener("error", (e) => reject(e), { once: true });
-          audio.load();
+          // Don't call load() - src is already set and browser will load automatically
         });
       }
       
