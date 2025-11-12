@@ -57,22 +57,38 @@ export function AudioRecorder() {
     setError(null);
 
     try {
+      console.log("[AudioRecorder] Starting upload, blob size:", blob.size, "type:", blob.type);
+      
       const formData = new FormData();
       formData.append("file", blob, `recording-${Date.now()}.webm`);
 
+      console.log("[AudioRecorder] Sending request to /api/journal/upload");
+      
       const response = await fetch("/api/journal/upload", {
         method: "POST",
         body: formData,
       });
 
+      console.log("[AudioRecorder] Response status:", response.status, response.statusText);
+
       if (!response.ok) {
-        const data = (await response.json().catch(() => null)) as { error?: string } | null;
-        const errorMsg = data?.error ?? "Failed to upload audio";
+        let errorMsg = "Failed to upload audio";
+        try {
+          const data = (await response.json()) as { error?: string } | null;
+          errorMsg = data?.error ?? `Server error: ${response.status} ${response.statusText}`;
+          console.error("[AudioRecorder] Server error response:", data);
+        } catch (parseError) {
+          console.error("[AudioRecorder] Failed to parse error response:", parseError);
+          errorMsg = `Server error: ${response.status} ${response.statusText}`;
+        }
         setError(errorMsg);
         setSuccess(false);
         toast.error(errorMsg);
         return;
       }
+
+      const result = await response.json();
+      console.log("[AudioRecorder] Upload successful:", result);
 
       setSuccess(true);
       setError(null);
@@ -84,8 +100,10 @@ export function AudioRecorder() {
       // Also trigger a custom event for the entries list to refresh
       window.dispatchEvent(new CustomEvent("journalEntryCreated"));
     } catch (err) {
-      console.error("Upload error", err);
-      const errorMsg = "An unexpected error occurred";
+      console.error("[AudioRecorder] Upload error:", err);
+      const errorMsg = err instanceof Error 
+        ? `Upload failed: ${err.message}` 
+        : "An unexpected error occurred";
       setError(errorMsg);
       toast.error(errorMsg);
     } finally {
