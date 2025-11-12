@@ -91,17 +91,23 @@ export function AudioPlayer({ audioId, duration }: AudioPlayerProps) {
       if (!url) return;
     }
 
-    if (!audioRef.current || audioRef.current.src !== url) {
-      // Clean up old audio if exists
-      if (audioRef.current) {
-        audioRef.current.pause();
-        audioRef.current.src = "";
-        audioRef.current = null;
-      }
-      
-      // Create new audio instance with fresh URL
-      const audio = new Audio(url);
-      audioRef.current = audio;
+    // Always create new audio instance for fresh URL (signed URLs expire)
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current.src = "";
+      audioRef.current = null;
+    }
+    
+    // Create new audio instance with fresh URL
+    const audio = new Audio(url);
+    audioRef.current = audio;
+    
+    // Verify src was set correctly
+    if (audio.src !== url && audio.src !== `${url}/`) {
+      console.warn("Audio src mismatch:", { expected: url, actual: audio.src });
+      // Force set src
+      audio.src = url;
+    }
       
       // Set crossOrigin to handle CORS (try without it first, add if needed)
       // audio.crossOrigin = "anonymous";
@@ -162,7 +168,6 @@ export function AudioPlayer({ audioId, duration }: AudioPlayerProps) {
           readyState: audio.readyState,
         });
       });
-    }
 
     // Ensure audioRef.current is still valid
     if (!audioRef.current) {
