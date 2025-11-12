@@ -63,6 +63,51 @@
     "failedToSave": "Failed to save",
     "failedToUpload": "Failed to upload",
     "unexpectedError": "An unexpected error occurred"
+  },
+  "voice": {
+    "quickRecord": {
+      "start": "Start Recording",
+      "hold": "Hold to Record",
+      "recording": "Recording",
+      "uploading": "Uploading...",
+      "transcribing": "Transcribing...",
+      "ready": "Ready!",
+      "uploaded": "Audio uploaded successfully",
+      "transcribed": "Transcription completed!",
+      "transcriptionError": "Transcription failed, but audio was saved",
+      "processing": "Transcription is processing...",
+      "cancel": "Cancel",
+      "error": "Failed to start recording. Please check microphone permissions.",
+      "uploadError": "Failed to upload audio"
+    },
+    "status": {
+      "uploading": "Uploading",
+      "transcribing": "Transcribing",
+      "done": "Done",
+      "error": "Error"
+    }
+  },
+  "journal": {
+    "search": {
+      "placeholder": "Search entries...",
+      "noResults": "No entries found"
+    },
+    "filters": {
+      "tags": "Tags",
+      "dateRange": "Date Range",
+      "from": "From",
+      "to": "To"
+    }
+  },
+  "export": {
+    "button": "Export",
+    "format": {
+      "csv": "CSV",
+      "pdf": "PDF"
+    },
+    "selectEntries": "Select entries to export",
+    "exporting": "Exporting...",
+    "success": "Export completed"
   }
 }
 

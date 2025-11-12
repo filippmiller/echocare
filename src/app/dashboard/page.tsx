@@ -5,6 +5,7 @@ import { SignOutButton } from "@/components/sign-out-button";
 import { NewEntryForm } from "@/components/new-entry-form";
 import { AudioRecorder } from "@/components/audio-recorder";
 import { JournalEntriesList } from "@/components/journal-entries-list";
+import { QuickRecord } from "@/components/quick-record";
 import { prisma } from "@/lib/prisma";
 import { getServerAuthSession } from "@/lib/auth";
 
@@ -87,6 +88,9 @@ export default async function DashboardPage() {
         </div>
 
         <JournalEntriesList initialEntries={initialEntries} initialNextCursor={nextCursor} />
+
+        {/* Quick Record FAB */}
+        <QuickRecord />
       </div>
     );
   } catch (error) {
