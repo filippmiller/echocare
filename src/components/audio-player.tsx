@@ -103,20 +103,20 @@ export function AudioPlayer({ audioId, duration }: AudioPlayerProps) {
       const audio = new Audio(url);
       audioRef.current = audio;
       
-      // Set crossOrigin to handle CORS
-      audio.crossOrigin = "anonymous";
+      // Set crossOrigin to handle CORS (try without it first, add if needed)
+      // audio.crossOrigin = "anonymous";
       
       audio.addEventListener("ended", () => {
         setIsPlaying(false);
       });
       audio.addEventListener("error", (e) => {
         console.error("Audio playback error:", e);
-        const audioEl = audioRef.current;
+        // Use the audio variable directly, not audioRef.current (which might be null)
         let errorMsg = "Failed to play audio";
         
-        if (audioEl?.error) {
-          const errorCode = audioEl.error.code;
-          const errorMessage = audioEl.error.message;
+        if (audio.error) {
+          const errorCode = audio.error.code;
+          const errorMessage = audio.error.message;
           
           // Map error codes to user-friendly messages
           switch (errorCode) {
@@ -138,10 +138,11 @@ export function AudioPlayer({ audioId, duration }: AudioPlayerProps) {
         }
         
         console.error("Audio error details:", {
-          error: audioEl?.error,
-          src: audioEl?.src,
-          readyState: audioEl?.readyState,
-          networkState: audioEl?.networkState,
+          error: audio.error,
+          src: audio.src,
+          readyState: audio.readyState,
+          networkState: audio.networkState,
+          url: url,
         });
         
         setError(errorMsg);
