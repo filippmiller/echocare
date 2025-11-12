@@ -79,13 +79,16 @@ export function maskApiKey(keyValue: string): string {
 
 /**
  * Get active API key for a provider
+ * Returns decrypted key value and key ID (for tracking usage)
  */
-export async function getActiveApiKey(provider: string): Promise<string | null> {
+export async function getActiveApiKey(
+  provider: string
+): Promise<{ key: string; keyId: string } | null> {
   const { prisma } = await import("@/lib/prisma");
   
   const apiKey = await prisma.apiKey.findFirst({
     where: {
-      provider,
+      provider: provider.toLowerCase(),
       isActive: true,
     },
     orderBy: {
@@ -98,11 +101,20 @@ export async function getActiveApiKey(provider: string): Promise<string | null> 
   }
 
   try {
-    return decryptApiKey(apiKey.keyValue);
+    const decryptedKey = decryptApiKey(apiKey.keyValue);
+    return { key: decryptedKey, keyId: apiKey.id };
   } catch (error) {
     console.error(`[API Keys] Failed to decrypt key for provider ${provider}:`, error);
     return null;
   }
+}
+
+/**
+ * Get active API key value only (for backward compatibility)
+ */
+export async function getActiveApiKeyValue(provider: string): Promise<string | null> {
+  const result = await getActiveApiKey(provider);
+  return result?.key ?? null;
 }
 
 /**

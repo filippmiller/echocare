@@ -120,6 +120,13 @@ export async function generateSummaryAndTags(
 
   const result = JSON.parse(completion.choices[0]?.message?.content || "{}");
   
+  // Track API key usage
+  if (keyId) {
+    await markApiKeyUsed(keyId).catch((err) => {
+      console.error("[Transcription] Failed to mark API key as used:", err);
+    });
+  }
+  
   return {
     summary: result.summary || "",
     tags: Array.isArray(result.tags) ? result.tags.slice(0, 5) : [],
