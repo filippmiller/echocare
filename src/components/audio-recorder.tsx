@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
-export function AudioRecorder({ onSuccess }: { onSuccess: () => void }) {
+export function AudioRecorder() {
   const router = useRouter();
   const [isRecording, setIsRecording] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
@@ -68,7 +68,6 @@ export function AudioRecorder({ onSuccess }: { onSuccess: () => void }) {
       }
 
       router.refresh();
-      onSuccess();
     } catch (err) {
       console.error("Upload error", err);
       setError("An unexpected error occurred");

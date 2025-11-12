@@ -75,8 +75,8 @@ export default async function DashboardPage() {
         <ProfileForm initialProfile={profile} />
 
         <div className="grid gap-6 md:grid-cols-2">
-          <NewEntryForm onSuccess={() => {}} />
-          <AudioRecorder onSuccess={() => {}} />
+          <NewEntryForm />
+          <AudioRecorder />
         </div>
 
         <JournalEntriesList initialEntries={entries} initialNextCursor={nextCursor} />

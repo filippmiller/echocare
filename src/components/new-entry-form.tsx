@@ -11,7 +11,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Input } from "@/components/ui/input";
 import { createEntrySchema, type CreateEntryInput } from "@/lib/validations/journal";
 
-export function NewEntryForm({ onSuccess }: { onSuccess: () => void }) {
+export function NewEntryForm() {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -46,7 +46,6 @@ export function NewEntryForm({ onSuccess }: { onSuccess: () => void }) {
 
       form.reset();
       router.refresh();
-      onSuccess();
     } catch (err) {
       console.error("Create entry error", err);
       setError("An unexpected error occurred");
