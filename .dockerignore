@@ -1,0 +1,12 @@
+.git
+node_modules
+.next/cache
+Dockerfile
+README*
+*.log
+.env.local
+.env*.local
+supabase-credentials.txt
+*.md
+!README.md
+
