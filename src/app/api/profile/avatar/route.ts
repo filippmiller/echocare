@@ -84,11 +84,20 @@ export async function POST(request: Request) {
       );
     }
 
-    // Get public URL
-    const { data: urlData } = supabaseAdmin.storage.from(AVATAR_BUCKET).getPublicUrl(uploadData.path);
-    const avatarUrl = urlData.publicUrl;
+    // Store path in profile, not full URL (we'll generate URL on demand)
+    // This allows us to use public or signed URLs as needed
+    const avatarPath = uploadData.path;
 
-    // Update profile with avatar URL
+    // Generate URL for immediate use (signed URL, valid for 1 hour)
+    const { data: signedUrlData } = await supabaseAdmin.storage
+      .from(AVATAR_BUCKET)
+      .createSignedUrl(avatarPath, 3600);
+
+    // Fallback to public URL if signed URL fails
+    const { data: publicUrlData } = supabaseAdmin.storage.from(AVATAR_BUCKET).getPublicUrl(avatarPath);
+    const immediateUrl = signedUrlData?.signedUrl ?? publicUrlData.publicUrl;
+
+    // Update profile with avatar path (store path, not full URL)
     const existingProfile = await prisma.profile.findUnique({
       where: { userId: session.user.id },
     });
@@ -97,18 +106,19 @@ export async function POST(request: Request) {
     if (existingProfile) {
       profile = await prisma.profile.update({
         where: { userId: session.user.id },
-        data: { avatarUrl },
+        data: { avatarUrl: avatarPath }, // Store path, not URL
       });
     } else {
       profile = await prisma.profile.create({
         data: {
           userId: session.user.id,
-          avatarUrl,
+          avatarUrl: avatarPath, // Store path, not URL
         },
       });
     }
 
-    return NextResponse.json({ avatarUrl }, { status: 200 });
+    // Return immediate URL for client to use right away
+    return NextResponse.json({ avatarUrl: immediateUrl, path: avatarPath }, { status: 200 });
   } catch (error) {
     console.error("Upload avatar error:", error);
     const errorMessage = error instanceof Error ? error.message : "Unknown error";

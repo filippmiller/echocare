@@ -42,13 +42,20 @@ export async function GET(
       .from(audioAsset.bucket)
       .createSignedUrl(audioAsset.path, 3600); // 1 hour expiry
 
-    if (signedUrlError) {
+    let audioUrl: string;
+    if (signedUrlError || !signedUrlData?.signedUrl) {
       console.error("Error creating signed URL:", signedUrlError);
-      return internalServerError("Failed to generate audio URL");
+      // Fallback to public URL if signed URL fails
+      const { data: publicUrlData } = supabaseAdmin.storage
+        .from(audioAsset.bucket)
+        .getPublicUrl(audioAsset.path);
+      audioUrl = publicUrlData.publicUrl;
+    } else {
+      audioUrl = signedUrlData.signedUrl;
     }
 
     return NextResponse.json({
-      url: signedUrlData.signedUrl,
+      url: audioUrl,
       mimeType: audioAsset.mime,
     });
   } catch (error) {

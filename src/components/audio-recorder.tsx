@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
@@ -38,7 +39,9 @@ export function AudioRecorder() {
       setError(null);
     } catch (err) {
       console.error("Error starting recording", err);
-      setError("Failed to start recording. Please check microphone permissions.");
+      const errorMsg = "Failed to start recording. Please check microphone permissions.";
+      setError(errorMsg);
+      toast.error(errorMsg);
     }
   };
 
@@ -64,13 +67,16 @@ export function AudioRecorder() {
 
       if (!response.ok) {
         const data = (await response.json().catch(() => null)) as { error?: string } | null;
-        setError(data?.error ?? "Failed to upload audio");
+        const errorMsg = data?.error ?? "Failed to upload audio";
+        setError(errorMsg);
         setSuccess(false);
+        toast.error(errorMsg);
         return;
       }
 
       setSuccess(true);
       setError(null);
+      toast.success("Audio uploaded successfully");
       
       // Refresh the page to show new entry
       router.refresh();
@@ -79,7 +85,9 @@ export function AudioRecorder() {
       window.dispatchEvent(new CustomEvent("journalEntryCreated"));
     } catch (err) {
       console.error("Upload error", err);
-      setError("An unexpected error occurred");
+      const errorMsg = "An unexpected error occurred";
+      setError(errorMsg);
+      toast.error(errorMsg);
     } finally {
       setIsUploading(false);
     }

@@ -51,10 +51,27 @@
 - User menu with avatar dropdown
 - Navigation links for logged-in users
 
-**Next Steps:**
-- Fix avatar display (check Supabase Storage configuration)
-- Fix audio playback (check signed URLs and CORS)
-- Refactor forms to shadcn/ui style
+#### Step 4: Fix Avatar Display
+**Time:** 2025-11-12 - In Progress
+- [ ] Check Supabase Storage bucket configuration
+- [ ] Verify avatar upload creates correct path
+- [ ] Fix avatar URL generation (use publicUrl or signedUrl)
+- [ ] Test avatar display after upload
+- [ ] Test avatar persistence after page reload
+
+#### Step 5: Fix Audio Playback
+**Time:** 2025-11-12 - Pending
+- [ ] Check audio API endpoint for signed URLs
+- [ ] Verify CORS settings
+- [ ] Fix audio playback error handling
+- [ ] Test audio recording and playback
+
+#### Step 6: Refactor Forms
+**Time:** 2025-11-12 - Pending
+- [ ] Update profile form to shadcn/ui style
+- [ ] Update journal entry form
+- [ ] Add toasts for success/error
+- [ ] Ensure consistent spacing and styling
 
 ---
 

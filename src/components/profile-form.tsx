@@ -3,6 +3,7 @@
 import { useMemo, useState, useEffect } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
+import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -112,18 +113,19 @@ export function ProfileForm({ initialProfile, userName }: ProfileFormProps) {
         body: formData,
       });
 
-      if (!response.ok) {
-        const data = (await response.json().catch(() => null)) as { error?: string } | null;
-        alert(data?.error ?? "Failed to upload avatar");
-        return;
-      }
+          if (!response.ok) {
+            const data = (await response.json().catch(() => null)) as { error?: string } | null;
+            toast.error(data?.error ?? "Failed to upload avatar");
+            return;
+          }
 
-      const result = (await response.json()) as { avatarUrl: string };
-      setAvatarUrl(result.avatarUrl);
-      form.setValue("avatarUrl", result.avatarUrl);
-    } catch (err) {
-      console.error("Avatar upload error", err);
-      alert("An unexpected error occurred while uploading avatar");
+          const result = (await response.json()) as { avatarUrl: string };
+          setAvatarUrl(result.avatarUrl);
+          form.setValue("avatarUrl", result.avatarUrl);
+          toast.success("Avatar updated successfully");
+        } catch (err) {
+          console.error("Avatar upload error", err);
+          toast.error("An unexpected error occurred while uploading avatar");
     } finally {
       setUploadingAvatar(false);
     }
@@ -150,15 +152,16 @@ export function ProfileForm({ initialProfile, userName }: ProfileFormProps) {
 
       if (!response.ok) {
         const data = (await response.json().catch(() => null)) as { error?: string } | null;
-        alert(data?.error ?? "Failed to save profile");
+        toast.error(data?.error ?? "Failed to save profile");
         return;
       }
 
+      toast.success("Profile saved successfully");
       setSaved(true);
       setTimeout(() => { setSaved(false); }, 3000);
     } catch (err) {
       console.error("Profile submission error", err);
-      alert("An unexpected error occurred");
+      toast.error("An unexpected error occurred");
     } finally {
       setIsLoading(false);
     }

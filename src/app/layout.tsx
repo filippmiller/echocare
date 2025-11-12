@@ -8,6 +8,8 @@ import { Header } from "@/components/layout/Header";
 import { Providers } from "@/app/providers";
 import { getServerAuthSession } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { getAvatarUrl } from "@/lib/avatarUtils";
+import { Toaster } from "sonner";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -57,7 +59,8 @@ export default async function RootLayout({
 
     userName = user?.name ?? null;
     userEmail = user?.email ?? null;
-    avatarUrl = profile?.avatarUrl ?? null;
+    // Get avatar URL from path (if stored as path) or use direct URL
+    avatarUrl = profile?.avatarUrl ? await getAvatarUrl(profile.avatarUrl) : null;
   }
 
   return (
@@ -71,6 +74,7 @@ export default async function RootLayout({
               <Header session={session} userName={userName} userEmail={userEmail} avatarUrl={avatarUrl} />
               <main className="flex-1">{children}</main>
             </div>
+            <Toaster position="top-right" richColors />
           </Providers>
         </NextIntlClientProvider>
       </body>

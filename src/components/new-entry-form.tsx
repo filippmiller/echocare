@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
+import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -40,11 +41,14 @@ export function NewEntryForm() {
 
       if (!response.ok) {
         const data = (await response.json().catch(() => null)) as { error?: string } | null;
-        setError(data?.error ?? "Failed to create entry");
+        const errorMsg = data?.error ?? "Failed to create entry";
+        setError(errorMsg);
+        toast.error(errorMsg);
         return;
       }
 
       form.reset();
+      toast.success("Entry created successfully");
       
       // Refresh the page to show new entry
       router.refresh();
@@ -53,7 +57,9 @@ export function NewEntryForm() {
       window.dispatchEvent(new CustomEvent("journalEntryCreated"));
     } catch (err) {
       console.error("Create entry error", err);
-      setError("An unexpected error occurred");
+      const errorMsg = "An unexpected error occurred";
+      setError(errorMsg);
+      toast.error(errorMsg);
     } finally {
       setIsLoading(false);
     }
