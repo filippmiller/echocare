@@ -2,7 +2,8 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   reactCompiler: true,
-  output: "standalone",
+  // Temporarily disable standalone to debug Railway deployment
+  // output: "standalone",
   rewrites() {
     return [
       { source: "/auth/login", destination: "/login" },
