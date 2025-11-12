@@ -4,8 +4,8 @@ node_modules
 Dockerfile
 README*
 *.log
-.env.local
-.env*.local
+.env
+.env.*
 supabase-credentials.txt
 *.md
 !README.md
