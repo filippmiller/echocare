@@ -650,163 +650,97 @@ const text = t("myEntries"); // "My Entries" or "Мои записи"
 
 ## Future Enhancement: Audio Transcription
 
-### Current State
+### Recommended Approach: Фоновая транскрипция через Railway Worker
 
-**Audio Storage:**
-- Audio files stored in Supabase Storage (`journal-audio` bucket)
-- `AudioAsset` model stores metadata (path, mime, size, duration)
-- `Job` model exists for background job tracking (status: PENDING, PROCESSING, DONE, FAILED)
+**Архитектура:**
+- ✅ Фоновая обработка (не тормозит UI)
+- ✅ Масштабируется (можно добавить несколько воркеров)
+- ✅ Надёжно (очередь задач, retry на ошибки)
+- ✅ Пользователь видит статус в реальном времени
 
-**Missing:**
-- No transcription API integration
-- No transcription text storage
-- No job processing system
+### Технологии
 
-### Recommended Approach: OpenAI Whisper API
+**OpenAI STT Models:**
+- `gpt-4o-mini-transcribe` - дешевле, хорошая точность
+- `gpt-4o-transcribe` - более мощная, выше точность
 
-**Why Whisper:**
-- High accuracy for multiple languages (including Russian)
-- Supports WebM, MP3, M4A formats (already supported)
-- Simple REST API
-- Cost-effective for small to medium volumes
+**Особенности:**
+- Поддержка `prompt` для улучшения качества (имена, топонимы, тематика)
+- Поддержка `language` параметра ("ru", "en", auto)
+- Официально рекомендовано для улучшения точности
 
-### Implementation Plan
+### Архитектура решения
 
-#### 1. API Integration Setup
+**Новая таблица:** `JournalAudio`
+- Статусы: `UPLOADED`, `QUEUED`, `PROCESSING`, `DONE`, `ERROR`
+- Поля: `lang`, `prompt`, `transcriptText`, `transcriptJson`, `errorMessage`
+- Индекс по `status` для быстрого поиска задач в очереди
 
-**Environment Variables:**
-```env
-OPENAI_API_KEY=sk-...
-TRANSCRIPTION_MODEL=whisper-1
-TRANSCRIPTION_LANGUAGE=auto  # or "en", "ru" for specific language
-```
+**Поток обработки:**
+1. При загрузке аудио → создаётся `JournalAudio` со статусом `QUEUED`
+2. Railway Worker (cron или постоянный процесс) каждые 5-10 сек:
+   - Берёт задачи со статусом `QUEUED` (SELECT FOR UPDATE SKIP LOCKED)
+   - Ставит статус `PROCESSING`
+   - Вызывает OpenAI API
+   - По успеху → `DONE` + сохраняет `transcriptText`
+   - По ошибке → `ERROR` + сохраняет `errorMessage`
+3. UI показывает бейдж статуса и кнопку "Повторить" на ошибках
 
-**New API Endpoint:**
-```
-POST /api/journal/transcribe/[entryId]
-```
-- Fetches `AudioAsset` for the entry
-- Downloads audio file from Supabase Storage
-- Sends to OpenAI Whisper API
-- Stores transcription in `JournalEntry.text` (or new field)
-- Updates `Job` status to DONE
+### Реализация
 
-#### 2. Background Job Processing
+**Детальный план:** См. `TRANSCRIPTION_IMPLEMENTATION_PLAN.md`
 
-**Option A: API Route with Queue (Simple)**
-- Create job on audio upload: `Job` with `status: PENDING`
-- Expose endpoint: `POST /api/journal/transcribe/[entryId]`
-- User can trigger manually OR
-- Cron job (Vercel Cron or Railway Cron) processes pending jobs
+**Основные компоненты:**
+1. **Core функция:** `src/lib/transcription.ts` - вызов OpenAI API
+2. **Worker:** `src/workers/transcription-worker.ts` - обработка очереди
+3. **API endpoints:**
+   - `GET /api/journal/transcription/[audioAssetId]` - статус транскрипции
+   - `POST /api/journal/transcription/[audioAssetId]/retry` - повторная попытка
+4. **UI компонент:** `TranscriptionStatus` - бейдж статуса и текст
 
-**Option B: Background Worker (Advanced)**
-- Separate worker process (Node.js script)
-- Polls database for `Job` records with `status: PENDING`
-- Processes jobs in queue
-- Updates job status
+### Улучшения качества (опционально)
 
-**Recommended:** Start with Option A (simpler, works with serverless)
+1. **Prompt и Language:** Передавать `language:"ru"` и `prompt` с тематикой/именами
+2. **Длинные файлы:** Резать по тишине (ffmpeg silencedetect) на куски 2-5 мин
+3. **Шум/эхо:** Лёгкая обработка аудио перед отправкой (high-pass, нормализация)
+4. **Пост-обработка:** Прогон через GPT-4o-mini для пунктуации/абзацев/сводки
 
-#### 3. Database Schema Updates
+### Стоимость
 
-**Option 1: Store transcription in existing `text` field**
-- If `JournalEntry.type === AUDIO` and `text` is populated → transcription exists
-- Simple, no schema changes
+**gpt-4o-mini-transcribe:**
+- ~$0.006 за минуту аудио
+- Пример: 5-минутная запись = $0.03
 
-**Option 2: Add `transcription` field**
-```prisma
-model JournalEntry {
-  // ... existing fields
-  transcription String?  // Transcription text
-  transcribedAt DateTime?  // When transcription completed
-}
-```
+**gpt-4o-transcribe:**
+- ~$0.015 за минуту аудио
+- Пример: 5-минутная запись = $0.075
 
-**Recommended:** Option 1 (simpler, reuses existing field)
+**Рекомендация:** Начать с `gpt-4o-mini-transcribe`
 
-#### 4. UI Updates
+### Чек-лист запуска
 
-**Audio Entry Display:**
-- Show "Transcribing..." indicator if `Job.status === PROCESSING`
-- Show transcription text below audio player when available
-- Add "Transcribe" button if no transcription exists
+1. ✅ Добавить `OPENAI_API_KEY` в Railway
+2. ✅ Создать миграцию для таблицы `JournalAudio`
+3. ✅ Установить `openai` пакет
+4. ✅ Реализовать core функцию транскрипции
+5. ✅ Реализовать worker/cron для обработки очереди
+6. ✅ Добавить UI компоненты для статуса
+7. ✅ Протестировать полный flow
 
-**Example:**
-```tsx
-{entry.type === "AUDIO" && entry.audio && (
-  <>
-    <AudioPlayer audioId={entry.audio.id} />
-    {entry.text ? (
-      <p className="text-sm text-muted-foreground">{entry.text}</p>
-    ) : (
-      <Button onClick={() => transcribeEntry(entry.id)}>
-        Transcribe Audio
-      </Button>
-    )}
-  </>
-)}
-```
+### Оценка времени
 
-#### 5. Cost Considerations
+- **Базовая реализация:** 6-8 часов
+- **С улучшениями качества:** +4-6 часов
+- **Итого:** 6-14 часов в зависимости от требований
 
-**OpenAI Whisper Pricing (as of 2024):**
-- $0.006 per minute of audio
-- Example: 5-minute audio = $0.03
+### Альтернативы
 
-**Optimization:**
-- Only transcribe on user request (not automatic)
-- Cache transcriptions (don't re-transcribe if exists)
-- Support user editing transcription (store edited version)
+**Faster-Whisper (локально):**
+- Можно поднять на Railway или отдельном сервере
+- Бесплатно, но требует больше ресурсов
+- Хорошее качество для русского языка
 
-#### 6. Alternative APIs (if needed)
-
-**Google Speech-to-Text:**
-- More expensive but higher accuracy
-- Better for long-form content
-
-**AssemblyAI:**
-- Good accuracy, competitive pricing
-- Supports speaker diarization (identify different speakers)
-
-**Deepgram:**
-- Real-time transcription
-- Good for live audio
-
-**Recommendation:** Start with OpenAI Whisper (simplest, good accuracy, reasonable cost)
-
-### Implementation Steps
-
-1. **Add OpenAI SDK:**
-   ```bash
-   npm install openai
-   ```
-
-2. **Create transcription API route:**
-   - `src/app/api/journal/transcribe/[entryId]/route.ts`
-   - Download audio from Supabase Storage
-   - Call OpenAI Whisper API
-   - Store transcription in `JournalEntry.text`
-   - Update `Job` status
-
-3. **Add transcription trigger:**
-   - Manual button in UI
-   - OR automatic on audio upload (create `Job` with PENDING status)
-
-4. **Update UI:**
-   - Show transcription status
-   - Display transcription text
-   - Allow editing transcription
-
-5. **Add error handling:**
-   - Handle API failures
-   - Retry logic for failed jobs
-   - User notifications
-
-### Estimated Development Time
-
-- **Basic implementation:** 4-6 hours
-- **With UI updates:** 6-8 hours
-- **With error handling and polish:** 8-10 hours
+**Рекомендация:** Начать с OpenAI API (проще и быстрее)
 
 ---
 
