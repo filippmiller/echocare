@@ -14,7 +14,6 @@ import { profileSchema } from "@/lib/validations/profile";
 import type { Gender } from "@prisma/client";
 import { predictGenderFromName } from "@/lib/genderPrediction";
 import { searchCitiesFallback } from "@/lib/citySearch";
-import { getAvatarUrl } from "@/lib/avatarUtils";
 
 interface Profile {
   id: string;
@@ -77,9 +76,20 @@ export function ProfileForm({ initialProfile, userName }: ProfileFormProps) {
         if (initialProfile.avatarUrl.startsWith("http")) {
           setAvatarDisplayUrl(initialProfile.avatarUrl);
         } else {
-          // Otherwise, generate signed URL from path
-          const url = await getAvatarUrl(initialProfile.avatarUrl);
-          setAvatarDisplayUrl(url);
+          // Otherwise, fetch signed URL from API
+          try {
+            const response = await fetch(`/api/profile/avatar/url?path=${encodeURIComponent(initialProfile.avatarUrl)}`);
+            if (response.ok) {
+              const data = (await response.json()) as { avatarUrl: string };
+              setAvatarDisplayUrl(data.avatarUrl);
+            } else {
+              console.error("Failed to get avatar URL from API");
+              setAvatarDisplayUrl(null);
+            }
+          } catch (error) {
+            console.error("Error fetching avatar URL:", error);
+            setAvatarDisplayUrl(null);
+          }
         }
       } else {
         setAvatarDisplayUrl(null);

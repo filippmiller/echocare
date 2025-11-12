@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import { getServerAuthSession } from "@/lib/auth";
-import { unauthorized, notFound, internalServerError } from "@/lib/apiErrors";
-import { prisma } from "@/lib/prisma";
+import { unauthorized, badRequest, internalServerError } from "@/lib/apiErrors";
 import { getSupabaseAdmin } from "@/lib/supabaseServer";
 
 const AVATAR_BUCKET = "avatars";
@@ -19,44 +18,41 @@ export async function GET(request: Request) {
     }
 
     const { searchParams } = new URL(request.url);
-    const userId = searchParams.get("userId") ?? session.user.id;
+    const path = searchParams.get("path");
 
-    // Verify ownership (users can only get their own avatar URL)
-    if (userId !== session.user.id) {
+    if (!path) {
+      return badRequest("Missing 'path' query parameter");
+    }
+
+    // Verify ownership - path should start with user/<userId>/
+    if (!path.startsWith(`user/${session.user.id}/`)) {
       return unauthorized();
     }
 
-    const profile = await prisma.profile.findUnique({
-      where: { userId },
-      select: {
-        avatarUrl: true,
-      },
-    });
-
-    if (!profile?.avatarUrl) {
-      return notFound("Avatar not found");
+    // If path is already a full URL, return it (legacy support)
+    if (path.startsWith("http")) {
+      return NextResponse.json({ avatarUrl: path });
     }
 
-    // If avatarUrl is already a full URL, return it
-    if (profile.avatarUrl.startsWith("http")) {
-      return NextResponse.json({ url: profile.avatarUrl });
-    }
-
-    // Otherwise, treat it as a path and generate URL
+    // Generate signed URL from path
     const supabaseAdmin = getSupabaseAdmin();
 
-    // Try to get public URL first (if bucket is public)
-    const { data: publicUrlData } = supabaseAdmin.storage.from(AVATAR_BUCKET).getPublicUrl(profile.avatarUrl);
-    
-    // For now, use public URL. If bucket is private, we'll need signed URLs
-    // Check if public URL works by trying signed URL as fallback
-    const { data: signedUrlData } = await supabaseAdmin.storage
+    // Try signed URL first (works for both public and private buckets)
+    const { data: signedUrlData, error: signedUrlError } = await supabaseAdmin.storage
       .from(AVATAR_BUCKET)
-      .createSignedUrl(profile.avatarUrl, 3600); // 1 hour expiry
+      .createSignedUrl(path, 60 * 60); // 1 hour expiry
 
-    const avatarUrl = signedUrlData?.signedUrl ?? publicUrlData.publicUrl;
+    let avatarUrl: string;
+    if (signedUrlError || !signedUrlData?.signedUrl) {
+      console.warn("Failed to get signed URL for avatar, falling back to public URL:", signedUrlError);
+      // Fallback to public URL if signed URL fails
+      const { data: publicUrlData } = supabaseAdmin.storage.from(AVATAR_BUCKET).getPublicUrl(path);
+      avatarUrl = publicUrlData.publicUrl;
+    } else {
+      avatarUrl = signedUrlData.signedUrl;
+    }
 
-    return NextResponse.json({ url: avatarUrl });
+    return NextResponse.json({ avatarUrl });
   } catch (error) {
     console.error("Get avatar URL error:", error);
     return internalServerError("Failed to get avatar URL");
