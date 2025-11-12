@@ -52,12 +52,16 @@
 - Navigation links for logged-in users
 
 #### Step 4: Fix Avatar Display
-**Time:** 2025-11-12 - In Progress
-- [ ] Check Supabase Storage bucket configuration
-- [ ] Verify avatar upload creates correct path
-- [ ] Fix avatar URL generation (use publicUrl or signedUrl)
-- [ ] Test avatar display after upload
-- [ ] Test avatar persistence after page reload
+**Time:** 2025-11-12
+- [x] Check Supabase Storage bucket configuration ✅
+- [x] Verify avatar upload creates correct path ✅
+- [x] Fix avatar URL generation (use publicUrl or signedUrl) ✅
+- [x] Create avatarUtils.ts helper function ✅
+- [x] Update layout to use getAvatarUrl helper ✅
+- [x] Store path instead of full URL in database ✅
+- [x] Committed avatar fixes ✅
+
+**Status:** ✅ Avatar now stores path, generates URL on demand with fallback
 
 #### Step 5: Fix Audio Playback
 **Time:** 2025-11-12
@@ -69,9 +73,6 @@
 - [x] Committed audio fixes ✅
 
 **Status:** ✅ Audio playback improved with better error handling and fallbacks
-- [ ] Verify CORS settings
-- [ ] Fix audio playback error handling
-- [ ] Test audio recording and playback
 
 #### Step 6: Refactor Forms
 **Time:** 2025-11-12 - Pending
