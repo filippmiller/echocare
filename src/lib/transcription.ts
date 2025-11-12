@@ -109,6 +109,7 @@ export async function generateSummaryAndTags(
     ? "Ты помощник для создания краткого резюме и тегов из транскрипции голосовой заметки. Верни JSON: {summary: 'краткое резюме 1-2 предложения', tags: ['тег1', 'тег2', 'тег3', 'тег4', 'тег5']}. Максимум 5 тегов."
     : "You are a helper for creating a brief summary and tags from a voice note transcription. Return JSON: {summary: 'brief summary 1-2 sentences', tags: ['tag1', 'tag2', 'tag3', 'tag4', 'tag5']}. Maximum 5 tags.";
 
+  const { client: openai, keyId } = await getOpenAIClient();
   const completion = await openai.chat.completions.create({
     model: "gpt-4o-mini",
     messages: [
