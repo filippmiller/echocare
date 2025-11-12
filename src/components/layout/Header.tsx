@@ -18,6 +18,9 @@ interface HeaderProps {
 
 export function Header({ session, userName, userEmail, avatarUrl }: HeaderProps) {
   const pathname = usePathname();
+  
+  // Ensure session is valid and has user data
+  const isAuthenticated = session && session.user && session.user.id;
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -29,7 +32,7 @@ export function Header({ session, userName, userEmail, avatarUrl }: HeaderProps)
           </Link>
 
           {/* Navigation - only show when logged in */}
-          {session && (
+          {isAuthenticated && (
             <nav className="hidden md:flex items-center gap-6">
               <Link
                 href="/dashboard"
@@ -57,7 +60,7 @@ export function Header({ session, userName, userEmail, avatarUrl }: HeaderProps)
         <div className="flex items-center gap-2">
           <LanguageSwitcher />
 
-          {session ? (
+          {isAuthenticated ? (
             <>
               {/* Notifications - placeholder */}
               <Button variant="ghost" size="sm" className="relative">
