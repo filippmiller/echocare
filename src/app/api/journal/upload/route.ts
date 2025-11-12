@@ -135,9 +135,32 @@ export async function POST(request: Request) {
     });
 
     console.info(`[Audio Upload API] JournalEntry created: ${entry.id}`);
+
+    // Create TranscriptionJob for automatic transcription
+    console.info(`[Audio Upload API] Creating TranscriptionJob...`);
+    const profile = await prisma.profile.findUnique({
+      where: { userId: session.user.id },
+      select: { locale: true },
+    });
+
+    const transcriptionJob = await prisma.transcriptionJob.create({
+      data: {
+        entryId: entry.id,
+        status: "PENDING",
+        provider: process.env.WHISPER_PROVIDER ?? "openai",
+      },
+    });
+
+    console.info(`[Audio Upload API] TranscriptionJob created: ${transcriptionJob.id}`);
     console.info(`[Audio Upload API] Upload complete successfully`);
 
-    return NextResponse.json(entry, { status: 201 });
+    return NextResponse.json(
+      {
+        ...entry,
+        transcriptionJobId: transcriptionJob.id,
+      },
+      { status: 201 }
+    );
   } catch (error) {
     console.error("[Audio Upload API] Upload audio error:", error);
     const errorMessage = error instanceof Error ? error.message : "Unknown error";
