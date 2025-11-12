@@ -103,17 +103,63 @@ export function AudioPlayer({ audioId, duration }: AudioPlayerProps) {
       const audio = new Audio(url);
       audioRef.current = audio;
       
+      // Set crossOrigin to handle CORS
+      audio.crossOrigin = "anonymous";
+      
       audio.addEventListener("ended", () => {
         setIsPlaying(false);
       });
       audio.addEventListener("error", (e) => {
         console.error("Audio playback error:", e);
-        const errorMsg = audio.error 
-          ? `Audio error: ${audio.error.code} - ${audio.error.message}`
-          : "Failed to play audio";
+        const audioEl = audioRef.current;
+        let errorMsg = "Failed to play audio";
+        
+        if (audioEl?.error) {
+          const errorCode = audioEl.error.code;
+          const errorMessage = audioEl.error.message;
+          
+          // Map error codes to user-friendly messages
+          switch (errorCode) {
+            case 1: // MEDIA_ERR_ABORTED
+              errorMsg = "Audio playback was aborted";
+              break;
+            case 2: // MEDIA_ERR_NETWORK
+              errorMsg = "Network error while loading audio. Please check your connection.";
+              break;
+            case 3: // MEDIA_ERR_DECODE
+              errorMsg = "Audio format not supported or file corrupted";
+              break;
+            case 4: // MEDIA_ERR_SRC_NOT_SUPPORTED
+              errorMsg = "Audio format not supported by browser";
+              break;
+            default:
+              errorMsg = `Audio error (${errorCode}): ${errorMessage}`;
+          }
+        }
+        
+        console.error("Audio error details:", {
+          error: audioEl?.error,
+          src: audioEl?.src,
+          readyState: audioEl?.readyState,
+          networkState: audioEl?.networkState,
+        });
+        
         setError(errorMsg);
         toast.error(errorMsg);
         setIsPlaying(false);
+      });
+      
+      // Add loadstart event for debugging
+      audio.addEventListener("loadstart", () => {
+        console.log("Audio load started:", url);
+      });
+      
+      // Add loadedmetadata event for debugging
+      audio.addEventListener("loadedmetadata", () => {
+        console.log("Audio metadata loaded:", {
+          duration: audio.duration,
+          readyState: audio.readyState,
+        });
       });
     }
 
