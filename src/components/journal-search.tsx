@@ -2,11 +2,13 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useTranslations } from "next-intl";
-import { Search, X, Calendar, Tag } from "lucide-react";
+import { Search, X, Calendar, Tag, Download } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { toast } from "sonner";
+import { useTranslations } from "next-intl";
 
 interface SearchFilters {
   q: string;
@@ -24,6 +26,8 @@ interface JournalSearchProps {
 export function JournalSearch({ onSearch, onClear, initialFilters }: JournalSearchProps) {
   const t = useTranslations("journal.search");
   const tFilters = useTranslations("journal.filters");
+  const tExport = useTranslations("export");
+  const [isExporting, setIsExporting] = useState(false);
   const [query, setQuery] = useState(initialFilters?.q || "");
   const [tagsInput, setTagsInput] = useState(initialFilters?.tags?.join(", ") || "");
   const [fromDate, setFromDate] = useState(initialFilters?.from || "");
@@ -70,6 +74,51 @@ export function JournalSearch({ onSearch, onClear, initialFilters }: JournalSear
     localStorage.removeItem("journalSearchFilters");
     onClear();
   }, [onClear]);
+
+  const handleExport = async (format: "csv" | "pdf") => {
+    setIsExporting(true);
+    try {
+      const filters: SearchFilters = {
+        q: query.trim(),
+        tags: tagsInput
+          .split(",")
+          .map((t) => t.trim())
+          .filter(Boolean),
+        from: fromDate,
+        to: toDate,
+      };
+
+      const response = await fetch("/api/journal/export", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          filter: filters.q || filters.tags.length || filters.from || filters.to ? filters : undefined,
+          format,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Export failed");
+      }
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `journal-export-${new Date().toISOString().split("T")[0]}.${format}`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);
+
+      toast.success(tExport("success") || "Export completed");
+    } catch (err) {
+      console.error("Export error", err);
+      toast.error("Failed to export entries");
+    } finally {
+      setIsExporting(false);
+    }
+  };
 
   const hasFilters = query || tagsInput || fromDate || toDate;
 
@@ -135,10 +184,30 @@ export function JournalSearch({ onSearch, onClear, initialFilters }: JournalSear
               {t("search") || "Search"}
             </Button>
             {hasFilters && (
-              <Button variant="outline" onClick={handleClear}>
-                <X className="h-4 w-4 mr-2" />
-                {t("clear") || "Clear"}
-              </Button>
+              <>
+                <Button variant="outline" onClick={handleClear}>
+                  <X className="h-4 w-4 mr-2" />
+                  {t("clear") || "Clear"}
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => void handleExport("csv")}
+                  disabled={isExporting}
+                  title={tExport("format.csv") || "Export as CSV"}
+                >
+                  <Download className="h-4 w-4 mr-2" />
+                  CSV
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => void handleExport("pdf")}
+                  disabled={isExporting}
+                  title={tExport("format.pdf") || "Export as PDF"}
+                >
+                  <Download className="h-4 w-4 mr-2" />
+                  PDF
+                </Button>
+              </>
             )}
           </div>
 
