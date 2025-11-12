@@ -23,11 +23,13 @@ export function AudioPlayer({ audioId, duration }: AudioPlayerProps) {
   useEffect(() => {
     // Cleanup on unmount
     return () => {
-      if (audioRef.current) {
-        audioRef.current.pause();
+      const audio = audioRef.current;
+      if (audio) {
+        audio.pause();
+        audio.src = "";
         audioRef.current = null;
       }
-      if (audioUrl) {
+      if (audioUrl && audioUrl.startsWith("blob:")) {
         URL.revokeObjectURL(audioUrl);
       }
     };
@@ -94,17 +96,20 @@ export function AudioPlayer({ audioId, duration }: AudioPlayerProps) {
       if (audioRef.current) {
         audioRef.current.pause();
         audioRef.current.src = "";
+        audioRef.current = null;
       }
       
       // Create new audio instance with fresh URL
-      audioRef.current = new Audio(url);
-      audioRef.current.addEventListener("ended", () => {
+      const audio = new Audio(url);
+      audioRef.current = audio;
+      
+      audio.addEventListener("ended", () => {
         setIsPlaying(false);
       });
-      audioRef.current.addEventListener("error", (e) => {
+      audio.addEventListener("error", (e) => {
         console.error("Audio playback error:", e);
-        const errorMsg = audioRef.current?.error 
-          ? `Audio error: ${audioRef.current.error.code} - ${audioRef.current.error.message}`
+        const errorMsg = audio.error 
+          ? `Audio error: ${audio.error.code} - ${audio.error.message}`
           : "Failed to play audio";
         setError(errorMsg);
         toast.error(errorMsg);
@@ -112,18 +117,35 @@ export function AudioPlayer({ audioId, duration }: AudioPlayerProps) {
       });
     }
 
+    // Ensure audioRef.current is still valid
+    if (!audioRef.current) {
+      const errorMsg = "Audio element not available";
+      setError(errorMsg);
+      toast.error(errorMsg);
+      return;
+    }
+
     try {
       // Ensure audio is ready
       if (audioRef.current.readyState < 2) {
-        await new Promise((resolve, reject) => {
-          if (!audioRef.current) {
+        await new Promise<void>((resolve, reject) => {
+          const audio = audioRef.current;
+          if (!audio) {
             reject(new Error("Audio element not available"));
             return;
           }
-          audioRef.current.addEventListener("canplay", resolve, { once: true });
-          audioRef.current.addEventListener("error", reject, { once: true });
-          audioRef.current.load();
+          audio.addEventListener("canplay", () => resolve(), { once: true });
+          audio.addEventListener("error", (e) => reject(e), { once: true });
+          audio.load();
         });
+      }
+      
+      // Double-check audioRef.current is still valid after async operations
+      if (!audioRef.current) {
+        const errorMsg = "Audio element was removed";
+        setError(errorMsg);
+        toast.error(errorMsg);
+        return;
       }
       
       await audioRef.current.play();
