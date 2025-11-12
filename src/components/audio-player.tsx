@@ -98,76 +98,77 @@ export function AudioPlayer({ audioId, duration }: AudioPlayerProps) {
       audioRef.current = null;
     }
     
-    // Create new audio instance with fresh URL
-    const audio = new Audio(url);
+    // Create new audio instance
+    const audio = new Audio();
     audioRef.current = audio;
     
-    // Verify src was set correctly
-    if (audio.src !== url && audio.src !== `${url}/`) {
-      console.warn("Audio src mismatch:", { expected: url, actual: audio.src });
-      // Force set src
-      audio.src = url;
-    }
+    // Set URL explicitly and verify
+    audio.src = url;
+    console.log("Setting audio src:", url);
+    console.log("Audio src after setting:", audio.src);
+    
+    // Add event listeners BEFORE loading
+    audio.addEventListener("ended", () => {
+      setIsPlaying(false);
+    });
+    
+    audio.addEventListener("error", (e) => {
+      console.error("Audio playback error:", e);
+      // Use the audio variable directly, not audioRef.current (which might be null)
+      let errorMsg = "Failed to play audio";
       
-      // Set crossOrigin to handle CORS (try without it first, add if needed)
-      // audio.crossOrigin = "anonymous";
-      
-      audio.addEventListener("ended", () => {
-        setIsPlaying(false);
-      });
-      audio.addEventListener("error", (e) => {
-        console.error("Audio playback error:", e);
-        // Use the audio variable directly, not audioRef.current (which might be null)
-        let errorMsg = "Failed to play audio";
+      if (audio.error) {
+        const errorCode = audio.error.code;
+        const errorMessage = audio.error.message;
         
-        if (audio.error) {
-          const errorCode = audio.error.code;
-          const errorMessage = audio.error.message;
-          
-          // Map error codes to user-friendly messages
-          switch (errorCode) {
-            case 1: // MEDIA_ERR_ABORTED
-              errorMsg = "Audio playback was aborted";
-              break;
-            case 2: // MEDIA_ERR_NETWORK
-              errorMsg = "Network error while loading audio. Please check your connection.";
-              break;
-            case 3: // MEDIA_ERR_DECODE
-              errorMsg = "Audio format not supported or file corrupted";
-              break;
-            case 4: // MEDIA_ERR_SRC_NOT_SUPPORTED
-              errorMsg = "Audio format not supported by browser";
-              break;
-            default:
-              errorMsg = `Audio error (${errorCode}): ${errorMessage}`;
-          }
+        // Map error codes to user-friendly messages
+        switch (errorCode) {
+          case 1: // MEDIA_ERR_ABORTED
+            errorMsg = "Audio playback was aborted";
+            break;
+          case 2: // MEDIA_ERR_NETWORK
+            errorMsg = "Network error while loading audio. Please check your connection.";
+            break;
+          case 3: // MEDIA_ERR_DECODE
+            errorMsg = "Audio format not supported or file corrupted";
+            break;
+          case 4: // MEDIA_ERR_SRC_NOT_SUPPORTED
+            errorMsg = "Audio format not supported by browser";
+            break;
+          default:
+            errorMsg = `Audio error (${errorCode}): ${errorMessage}`;
         }
-        
-        console.error("Audio error details:", {
-          error: audio.error,
-          src: audio.src,
-          readyState: audio.readyState,
-          networkState: audio.networkState,
-          url: url,
-        });
-        
-        setError(errorMsg);
-        toast.error(errorMsg);
-        setIsPlaying(false);
+      }
+      
+      console.error("Audio error details:", {
+        error: audio.error,
+        src: audio.src,
+        readyState: audio.readyState,
+        networkState: audio.networkState,
+        url: url,
       });
       
-      // Add loadstart event for debugging
-      audio.addEventListener("loadstart", () => {
-        console.log("Audio load started:", url);
+      setError(errorMsg);
+      toast.error(errorMsg);
+      setIsPlaying(false);
+    });
+    
+    // Add loadstart event for debugging
+    audio.addEventListener("loadstart", () => {
+      console.log("Audio load started, src:", audio.src);
+    });
+    
+    // Add loadedmetadata event for debugging
+    audio.addEventListener("loadedmetadata", () => {
+      console.log("Audio metadata loaded:", {
+        duration: audio.duration,
+        readyState: audio.readyState,
+        src: audio.src,
       });
-      
-      // Add loadedmetadata event for debugging
-      audio.addEventListener("loadedmetadata", () => {
-        console.log("Audio metadata loaded:", {
-          duration: audio.duration,
-          readyState: audio.readyState,
-        });
-      });
+    });
+    
+    // Explicitly load the audio
+    audio.load();
 
     // Ensure audioRef.current is still valid
     if (!audioRef.current) {
