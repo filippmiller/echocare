@@ -32,6 +32,11 @@ ARG DATABASE_URL="postgresql://stub:stub@localhost:5432/stub?schema=public"
 ENV DATABASE_URL=${DATABASE_URL}
 # Отключаем проверку env для generate (подстраховка)
 ENV PRISMA_GENERATE_SKIP_ENV_CHECK=1
+# Stub для NEXTAUTH_SECRET на build-этапе (Next.js выполняет server-side код при сборке)
+ARG NEXTAUTH_SECRET="build-stub-secret-do-not-use-in-production"
+ENV NEXTAUTH_SECRET=${NEXTAUTH_SECRET}
+ARG NEXTAUTH_URL="http://localhost:3000"
+ENV NEXTAUTH_URL=${NEXTAUTH_URL}
 RUN npx prisma generate
 RUN npm run build || pnpm run build || yarn build
 
