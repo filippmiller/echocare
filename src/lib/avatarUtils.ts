@@ -4,34 +4,34 @@ const AVATAR_BUCKET = "avatars";
 
 /**
  * Get avatar URL from stored path
+ * Unified helper: always generates signed URL first, falls back to public URL if needed
  * Handles both full URLs (legacy) and paths (new approach)
  */
-export async function getAvatarUrl(avatarUrlOrPath: string | null | undefined): Promise<string | null> {
-  if (!avatarUrlOrPath) {
+export async function getAvatarUrl(path?: string | null): Promise<string | null> {
+  if (!path) {
     return null;
   }
 
-  // If it's already a full URL, return it
-  if (avatarUrlOrPath.startsWith("http")) {
-    return avatarUrlOrPath;
+  // If it's already a full URL (legacy data), return it
+  if (path.startsWith("http")) {
+    return path;
   }
 
-  // Otherwise, treat it as a path and generate signed URL
   try {
     const supabaseAdmin = getSupabaseAdmin();
 
-    // Try signed URL first (works for both public and private buckets)
-    const { data: signedUrlData, error: signedUrlError } = await supabaseAdmin.storage
+    // Сначала пытаемся signed URL (работает для публичных и приватных bucket)
+    const { data, error } = await supabaseAdmin.storage
       .from(AVATAR_BUCKET)
-      .createSignedUrl(avatarUrlOrPath, 3600); // 1 hour expiry
+      .createSignedUrl(path, 60 * 60); // 1 hour expiry
 
-    if (!signedUrlError && signedUrlData?.signedUrl) {
-      return signedUrlData.signedUrl;
+    if (!error && data?.signedUrl) {
+      return data.signedUrl;
     }
 
-    // Fallback to public URL
-    const { data: publicUrlData } = supabaseAdmin.storage.from(AVATAR_BUCKET).getPublicUrl(avatarUrlOrPath);
-    return publicUrlData.publicUrl;
+    // Фолбэк на public URL — если bucket public
+    const { data: pub } = supabaseAdmin.storage.from(AVATAR_BUCKET).getPublicUrl(path);
+    return pub.publicUrl ?? null;
   } catch (error) {
     console.error("Error generating avatar URL:", error);
     return null;

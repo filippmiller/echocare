@@ -14,6 +14,7 @@ import { profileSchema } from "@/lib/validations/profile";
 import type { Gender } from "@prisma/client";
 import { predictGenderFromName } from "@/lib/genderPrediction";
 import { searchCitiesFallback } from "@/lib/citySearch";
+import { getAvatarUrl } from "@/lib/avatarUtils";
 
 interface Profile {
   id: string;
@@ -34,7 +35,7 @@ interface ProfileFormProps {
 export function ProfileForm({ initialProfile, userName }: ProfileFormProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [saved, setSaved] = useState(false);
-  const [avatarUrl, setAvatarUrl] = useState<string | null>(initialProfile?.avatarUrl ?? null);
+  const [avatarDisplayUrl, setAvatarDisplayUrl] = useState<string | null>(null); // URL для отображения (preview)
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [citySuggestions, setCitySuggestions] = useState<Array<{ name: string; country: string; fullName: string }>>([]);
   const [showCitySuggestions, setShowCitySuggestions] = useState(false);
@@ -68,6 +69,25 @@ export function ProfileForm({ initialProfile, userName }: ProfileFormProps) {
     ),
   });
 
+  // Load avatar display URL from path when component mounts or profile changes
+  useEffect(() => {
+    const loadDisplayUrl = async () => {
+      if (initialProfile?.avatarUrl) {
+        // If it's already a URL, use it directly
+        if (initialProfile.avatarUrl.startsWith("http")) {
+          setAvatarDisplayUrl(initialProfile.avatarUrl);
+        } else {
+          // Otherwise, generate signed URL from path
+          const url = await getAvatarUrl(initialProfile.avatarUrl);
+          setAvatarDisplayUrl(url);
+        }
+      } else {
+        setAvatarDisplayUrl(null);
+      }
+    };
+    void loadDisplayUrl();
+  }, [initialProfile?.avatarUrl]);
+
   useEffect(() => {
     const displayName = userName ?? initialProfile?.fullName ?? "";
     form.reset({
@@ -78,10 +98,9 @@ export function ProfileForm({ initialProfile, userName }: ProfileFormProps) {
       city: initialProfile?.city ?? "",
       phone: initialProfile?.phone ?? "",
       locale: (initialProfile?.locale === "en" || initialProfile?.locale === "ru") ? initialProfile.locale : undefined,
-      avatarUrl: initialProfile?.avatarUrl ?? "",
+      avatarUrl: initialProfile?.avatarUrl ?? "", // Store path, not URL
       gender: predictedGender,
     });
-    setAvatarUrl(initialProfile?.avatarUrl ?? null);
   }, [initialProfile, userName, form, predictedGender]);
 
   const handleCityChange = (value: string) => {
@@ -113,19 +132,24 @@ export function ProfileForm({ initialProfile, userName }: ProfileFormProps) {
         body: formData,
       });
 
-          if (!response.ok) {
-            const data = (await response.json().catch(() => null)) as { error?: string } | null;
-            toast.error(data?.error ?? "Failed to upload avatar");
-            return;
-          }
+      if (!response.ok) {
+        const data = (await response.json().catch(() => null)) as { error?: string } | null;
+        toast.error(data?.error ?? "Failed to upload avatar");
+        return;
+      }
 
-          const result = (await response.json()) as { avatarUrl: string };
-          setAvatarUrl(result.avatarUrl);
-          form.setValue("avatarUrl", result.avatarUrl);
-          toast.success("Avatar updated successfully");
-        } catch (err) {
-          console.error("Avatar upload error", err);
-          toast.error("An unexpected error occurred while uploading avatar");
+      const result = (await response.json()) as { avatarUrl: string; path: string };
+      
+      // Для instant preview в форме используем signed URL
+      setAvatarDisplayUrl(result.avatarUrl);
+      
+      // В ФОРМЕ/БД ХРАНИМ ТОЛЬКО ПУТЬ (а не URL)
+      form.setValue("avatarUrl", result.path);
+      
+      toast.success("Avatar updated successfully");
+    } catch (err) {
+      console.error("Avatar upload error", err);
+      toast.error("An unexpected error occurred while uploading avatar");
     } finally {
       setUploadingAvatar(false);
     }
@@ -202,13 +226,13 @@ export function ProfileForm({ initialProfile, userName }: ProfileFormProps) {
                   <FormLabel>Avatar</FormLabel>
                   <FormControl>
                     <div className="flex items-center gap-4">
-                      {avatarUrl ? (
+                      {avatarDisplayUrl ? (
                         <img
-                          src={avatarUrl}
+                          src={avatarDisplayUrl}
                           alt="Avatar"
                           className="h-20 w-20 rounded-full object-cover border-2 border-border"
                           onError={(e) => {
-                            console.error("Avatar image failed to load:", avatarUrl);
+                            console.error("Avatar image failed to load:", avatarDisplayUrl);
                             e.currentTarget.style.display = "none";
                           }}
                         />

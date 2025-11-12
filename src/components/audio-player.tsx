@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -11,138 +11,123 @@ interface AudioPlayerProps {
   duration?: number | null;
 }
 
+type AudioStatus = "idle" | "loading" | "ready" | "error";
+
 export function AudioPlayer({ audioId, duration }: AudioPlayerProps) {
   const t = useTranslations("journal");
-  const tErrors = useTranslations("errors");
+  const [status, setStatus] = useState<AudioStatus>("idle");
   const [isPlaying, setIsPlaying] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-  const [audioUrl, setAudioUrl] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
   // Create audio element once and reuse it
   useEffect(() => {
-    if (!audioRef.current) {
-      const audio = document.createElement("audio");
-      audio.crossOrigin = "anonymous";
-      audio.preload = "none"; // Don't preload until we set src
-      
-      // Add event listeners
-      audio.addEventListener("ended", () => {
-        setIsPlaying(false);
-      });
-      
-      audio.addEventListener("error", (e) => {
-        console.error("Audio playback error:", e);
-        const audioEl = audioRef.current;
-        if (!audioEl) return;
-        
-        let errorMsg = "Failed to play audio";
-        if (audioEl.error) {
-          const errorCode = audioEl.error.code;
-          const errorMessage = audioEl.error.message;
-          
-          switch (errorCode) {
-            case 1: // MEDIA_ERR_ABORTED
-              errorMsg = "Audio playback was aborted";
-              break;
-            case 2: // MEDIA_ERR_NETWORK
-              errorMsg = "Network error while loading audio. Please check your connection.";
-              break;
-            case 3: // MEDIA_ERR_DECODE
-              errorMsg = "Audio format not supported or file corrupted";
-              break;
-            case 4: // MEDIA_ERR_SRC_NOT_SUPPORTED
-              errorMsg = "Audio format not supported by browser";
-              break;
-            default:
-              errorMsg = `Audio error (${errorCode}): ${errorMessage}`;
-          }
-        }
-        
-        console.error("Audio error details:", {
-          error: audioEl.error,
-          src: audioEl.src,
-          readyState: audioEl.readyState,
-          networkState: audioEl.networkState,
-        });
-        
-        setError(errorMsg);
-        toast.error(errorMsg);
-        setIsPlaying(false);
-      });
-      
-      audio.addEventListener("loadstart", () => {
-        console.log("Audio load started, src:", audio.src);
-      });
-      
-      audio.addEventListener("loadedmetadata", () => {
-        console.log("Audio metadata loaded:", {
-          duration: audio.duration,
-          readyState: audio.readyState,
-          src: audio.src,
-        });
-      });
-      
-      audioRef.current = audio;
-    }
+    audioRef.current = new Audio();
+    const a = audioRef.current;
 
-    // Cleanup on unmount
-    return () => {
-      const audio = audioRef.current;
-      if (audio) {
-        audio.pause();
-        audio.src = "";
-        // Remove all event listeners by cloning the element
-        const newAudio = audio.cloneNode(false) as HTMLAudioElement;
-        audioRef.current = newAudio;
-      }
-      if (audioUrl && audioUrl.startsWith("blob:")) {
-        URL.revokeObjectURL(audioUrl);
-      }
+    const onLoadStart = () => {
+      // Подстраховка, чтобы видеть реальный src
+      console.debug("[AudioPlayer] loadstart src=", a.src);
     };
-  }, [audioUrl]);
 
-  const loadAudio = async () => {
-    if (audioUrl) return audioUrl;
+    const onError = () => {
+      console.error("[AudioPlayer] Audio error:", a.error);
+      setStatus("error");
+      setIsPlaying(false);
+      
+      let errorMsg = "Failed to play audio";
+      if (a.error) {
+        const errorCode = a.error.code;
+        switch (errorCode) {
+          case 1: // MEDIA_ERR_ABORTED
+            errorMsg = "Audio playback was aborted";
+            break;
+          case 2: // MEDIA_ERR_NETWORK
+            errorMsg = "Network error while loading audio. Please check your connection.";
+            break;
+          case 3: // MEDIA_ERR_DECODE
+            errorMsg = "Audio format not supported or file corrupted";
+            break;
+          case 4: // MEDIA_ERR_SRC_NOT_SUPPORTED
+            errorMsg = "Audio format not supported by browser";
+            break;
+          default:
+            errorMsg = `Audio error (${errorCode}): ${a.error.message}`;
+        }
+      }
+      toast.error(errorMsg);
+    };
 
-    setIsLoading(true);
-    setError(null);
+    const onCanPlay = () => {
+      setStatus("ready");
+    };
+
+    const onEnded = () => {
+      setIsPlaying(false);
+    };
+
+    a.addEventListener("loadstart", onLoadStart);
+    a.addEventListener("error", onError);
+    a.addEventListener("canplay", onCanPlay);
+    a.addEventListener("ended", onEnded);
+
+    return () => {
+      a.pause();
+      a.removeEventListener("loadstart", onLoadStart);
+      a.removeEventListener("error", onError);
+      a.removeEventListener("canplay", onCanPlay);
+      a.removeEventListener("ended", onEnded);
+      audioRef.current = null;
+    };
+  }, []);
+
+  const loadAndPlay = useCallback(async () => {
+    if (!audioRef.current) return;
+
+    setStatus("loading");
 
     try {
-      const response = await fetch(`/api/journal/audio/${audioId}`);
-      if (!response.ok) {
-        const data = (await response.json().catch(() => null)) as { error?: string } | null;
+      const res = await fetch(`/api/journal/audio/${audioId}`);
+      if (!res.ok) {
+        const data = (await res.json().catch(() => null)) as { error?: string } | null;
         throw new Error(data?.error ?? "Failed to load audio");
       }
 
-      const data = (await response.json()) as { url: string; mimeType: string };
-      
-      if (!data.url) {
+      const { url } = (await res.json()) as { url: string; mimeType?: string };
+
+      if (!url) {
         throw new Error("No URL returned from server");
       }
 
-      // Validate URL
-      try {
-        new URL(data.url);
-      } catch {
-        throw new Error("Invalid URL returned from server");
+      // ВАЖНО: не вызываем .load() дважды — просто меняем src и play()
+      const a = audioRef.current;
+      if (!a) return;
+
+      // Stop current playback
+      a.pause();
+      
+      // Set new src only if different
+      if (a.src !== url) {
+        a.src = url;
       }
 
-      setAudioUrl(data.url);
-      return data.url;
+      try {
+        await a.play();
+        setIsPlaying(true);
+        setStatus("ready");
+      } catch (playError) {
+        console.error("[AudioPlayer] Play error:", playError);
+        setStatus("error");
+        toast.error("Failed to play audio. Please try again.");
+      }
     } catch (err) {
-      console.error("Error loading audio:", err);
+      console.error("[AudioPlayer] Load error:", err);
       const errorMessage = err instanceof Error ? err.message : "Failed to load audio";
-      setError(errorMessage);
+      setStatus("error");
       toast.error(errorMessage);
-      return null;
-    } finally {
-      setIsLoading(false);
     }
-  };
+  }, [audioId]);
 
-  const togglePlayback = async () => {
+  const togglePlayback = () => {
     if (isPlaying) {
       // Pause
       if (audioRef.current) {
@@ -153,68 +138,7 @@ export function AudioPlayer({ audioId, duration }: AudioPlayerProps) {
     }
 
     // Play
-    let url = audioUrl;
-    if (!url) {
-      url = await loadAudio();
-      if (!url) return;
-    }
-
-    const audio = audioRef.current;
-    if (!audio) {
-      const errorMsg = "Audio element not available";
-      setError(errorMsg);
-      toast.error(errorMsg);
-      return;
-    }
-
-    // Stop current playback and reset
-    audio.pause();
-    audio.src = "";
-    
-    // Set new URL - this will trigger loadstart automatically
-    console.log("Setting audio src:", url);
-    audio.src = url;
-    console.log("Audio src after setting:", audio.src);
-    
-    // Verify src was set correctly
-    if (audio.src !== url && audio.src !== new URL(url, window.location.href).href) {
-      console.error("Audio src mismatch! Expected:", url, "Got:", audio.src);
-      const errorMsg = "Failed to set audio source";
-      setError(errorMsg);
-      toast.error(errorMsg);
-      return;
-    }
-
-    try {
-      // Wait for audio to be ready
-      if (audio.readyState < 2) {
-        await new Promise<void>((resolve, reject) => {
-          // Check if already ready
-          if (audio.readyState >= 2) {
-            resolve();
-            return;
-          }
-          const handleCanPlay = () => {
-            resolve();
-          };
-          const handleError = (e: Event) => {
-            reject(new Error("Audio failed to load"));
-          };
-          audio.addEventListener("canplay", handleCanPlay, { once: true });
-          audio.addEventListener("error", handleError, { once: true });
-        });
-      }
-      
-      await audio.play();
-      setIsPlaying(true);
-      setError(null);
-    } catch (err) {
-      console.error("Error playing audio:", err);
-      const errorMsg = err instanceof Error ? err.message : "Failed to play audio";
-      setError(errorMsg);
-      toast.error(errorMsg);
-      setIsPlaying(false);
-    }
+    void loadAndPlay();
   };
 
   return (
@@ -222,26 +146,28 @@ export function AudioPlayer({ audioId, duration }: AudioPlayerProps) {
       <Button
         variant="outline"
         size="sm"
-        onClick={() => void togglePlayback()}
-        disabled={isLoading}
+        onClick={togglePlayback}
+        disabled={status === "loading"}
         className="flex items-center gap-2"
       >
-        {isLoading ? (
+        {status === "loading" ? (
           <Loader2 className="h-4 w-4 animate-spin" />
         ) : isPlaying ? (
           <Pause className="h-4 w-4" />
         ) : (
           <Play className="h-4 w-4" />
         )}
-        <span>{isPlaying ? t("pause") : t("play")}</span>
+        <span>
+          {status === "loading" ? "Loading..." : isPlaying ? t("pause") : t("play")}
+        </span>
       </Button>
       {duration && (
         <span className="text-xs text-muted-foreground">
           {Math.round(duration)}s
         </span>
       )}
-      {error && (
-        <span className="text-xs text-destructive">{error}</span>
+      {status === "error" && (
+        <span className="text-xs text-destructive">Error</span>
       )}
     </div>
   );
