@@ -22,6 +22,16 @@
 #### Step 1: Branch Creation
 - [x] Created branch `feat/ui-refresh-nav-lang`
 - [x] Created progress log file
+- [x] Committed progress log
+
+#### Step 2: Dependencies Check
+**Time:** 2025-11-12
+- [x] Verified lucide-react installed ✅
+- [x] Verified next-intl installed ✅
+- [x] Installed sonner for toasts ✅
+- [x] Verified shadcn/ui partially installed (button, card, form, input, label exist)
+- [ ] Need to check/add DropdownMenu component for avatar menu
+- [ ] Need to check/add Select component for forms
 
 ---
 
