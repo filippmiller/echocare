@@ -33,6 +33,14 @@ enum EntryType {
   AUDIO
 }
 
+enum TranscriptionStatus {
+  UPLOADED
+  QUEUED
+  PROCESSING
+  DONE
+  ERROR
+}
+
 model User {
   id             String         @id @default(cuid())
   email          String?        @unique
@@ -75,20 +83,26 @@ model AudioAsset {
 }
 
 model JournalEntry {
-  id        String      @id @default(cuid())
-  userId    String
-  user      User        @relation(fields: [userId], references: [id], onDelete: Cascade)
-  type      EntryType
-  title     String?
-  text      String?
-  mood      String?
-  energy    Int?
-  tags      String[]    @default([])
-  audioId   String?
-  audio     AudioAsset? @relation(fields: [audioId], references: [id], onDelete: SetNull)
-  createdAt DateTime    @default(now())
-  updatedAt DateTime    @updatedAt
-  jobs      Job[]
+  id                String             @id @default(cuid())
+  userId            String
+  user              User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type              EntryType
+  title             String?
+  text              String?            @db.Text
+  summary           String?            @db.Text
+  mood              String?
+  energy            Int?
+  tags              String[]           @default([])
+  audioId           String?
+  audio             AudioAsset?        @relation(fields: [audioId], references: [id], onDelete: SetNull)
+  transcribedAt     DateTime?
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+  jobs              Job[]
+  transcriptionJobs TranscriptionJob[]
+
+  @@index([userId, createdAt(sort: Desc)])
+  @@index([tags], type: Gin, map: "journal_entries_tags_idx")
 }
 
 model Job {
@@ -100,4 +114,20 @@ model Job {
   entry     JournalEntry @relation(fields: [entryId], references: [id], onDelete: Cascade)
   createdAt DateTime     @default(now())
   updatedAt DateTime     @updatedAt
+}
+
+model TranscriptionJob {
+  id         String       @id @default(cuid())
+  entryId    String
+  entry      JournalEntry @relation(fields: [entryId], references: [id], onDelete: Cascade)
+  status     String       @default("PENDING") // PENDING, RUNNING, DONE, ERROR
+  provider   String       @default("openai")
+  attempts   Int          @default(0)
+  error      String?      @db.Text
+  createdAt  DateTime     @default(now())
+  startedAt  DateTime?
+  finishedAt DateTime?
+
+  @@index([status, createdAt])
+  @@index([entryId])
 }
