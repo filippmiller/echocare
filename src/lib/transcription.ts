@@ -1,8 +1,34 @@
 import OpenAI from "openai";
 import { getSupabaseAdmin } from "./supabaseServer";
+import { getActiveApiKey, markApiKeyUsed } from "./apiKeys";
 
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY! });
 const JOURNAL_AUDIO_BUCKET = process.env.SUPABASE_BUCKET ?? "journal-audio";
+
+/**
+ * Get OpenAI client with API key from database or environment variable
+ */
+async function getOpenAIClient(): Promise<{ client: OpenAI; keyId: string | null }> {
+  // Try to get key from database first
+  const dbKeyResult = await getActiveApiKey("openai");
+  
+  if (dbKeyResult) {
+    return {
+      client: new OpenAI({ apiKey: dbKeyResult.key }),
+      keyId: dbKeyResult.keyId,
+    };
+  }
+
+  // Fallback to environment variable
+  const envKey = process.env.OPENAI_API_KEY;
+  if (!envKey) {
+    throw new Error("OpenAI API key not found. Please set OPENAI_API_KEY environment variable or add a key via Admin → API Keys.");
+  }
+
+  return {
+    client: new OpenAI({ apiKey: envKey }),
+    keyId: null,
+  };
+}
 
 export interface TranscribeOptions {
   path: string;
@@ -50,6 +76,7 @@ export async function transcribeSupabaseAudio({
   );
 
   // 3) Отправляем в OpenAI STT
+  const { client: openai, keyId } = await getOpenAIClient();
   const transcription = await openai.audio.transcriptions.create({
     model: process.env.WHISPER_MODEL ?? "gpt-4o-mini-transcribe", // или "gpt-4o-transcribe"
     file,
@@ -57,6 +84,13 @@ export async function transcribeSupabaseAudio({
     prompt: prompt || undefined, // Подсказка для улучшения качества
     response_format: "verbose_json", // Для получения временных меток
   });
+
+  // Track API key usage
+  if (keyId) {
+    await markApiKeyUsed(keyId).catch((err) => {
+      console.error("[Transcription] Failed to mark API key as used:", err);
+    });
+  }
 
   return {
     text: transcription.text,

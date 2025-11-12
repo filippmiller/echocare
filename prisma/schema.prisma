@@ -83,22 +83,22 @@ model AudioAsset {
 }
 
 model JournalEntry {
-  id                String             @id @default(cuid())
-  userId            String
-  user              User               @relation(fields: [userId], references: [id], onDelete: Cascade)
-  type              EntryType
-  title             String?
-  text              String?            @db.Text
-  summary           String?            @db.Text
-  mood              String?
-  energy            Int?
-  tags              String[]           @default([])
-  audioId           String?
-  audio             AudioAsset?        @relation(fields: [audioId], references: [id], onDelete: SetNull)
-  transcribedAt     DateTime?
-  createdAt         DateTime           @default(now())
-  updatedAt         DateTime           @updatedAt
-  jobs              Job[]
+  id            String      @id @default(cuid())
+  userId        String
+  user          User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type          EntryType
+  title         String?
+  text          String?     @db.Text
+  summary       String?     @db.Text
+  mood          String?
+  energy        Int?
+  tags          String[]    @default([])
+  audioId       String?
+  audio         AudioAsset? @relation(fields: [audioId], references: [id], onDelete: SetNull)
+  transcribedAt DateTime?
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+  jobs          Job[]
   transcriptionJobs TranscriptionJob[]
 
   @@index([userId, createdAt(sort: Desc)])
@@ -117,14 +117,14 @@ model Job {
 }
 
 model TranscriptionJob {
-  id         String       @id @default(cuid())
+  id         String   @id @default(cuid())
   entryId    String
   entry      JournalEntry @relation(fields: [entryId], references: [id], onDelete: Cascade)
-  status     String       @default("PENDING") // PENDING, RUNNING, DONE, ERROR
-  provider   String       @default("openai")
-  attempts   Int          @default(0)
-  error      String?      @db.Text
-  createdAt  DateTime     @default(now())
+  status     String   @default("PENDING") // PENDING, RUNNING, DONE, ERROR
+  provider   String   @default("openai")
+  attempts   Int      @default(0)
+  error      String?  @db.Text
+  createdAt  DateTime @default(now())
   startedAt  DateTime?
   finishedAt DateTime?
 
@@ -133,15 +133,15 @@ model TranscriptionJob {
 }
 
 model ApiKey {
-  id         String    @id @default(cuid())
-  name       String // Display name (e.g., "OpenAI Production", "OpenAI Staging")
-  provider   String // Provider name (e.g., "openai", "anthropic")
-  keyValue   String    @db.Text // Encrypted key value
-  isActive   Boolean   @default(true)
+  id         String   @id @default(cuid())
+  name       String   // Display name (e.g., "OpenAI Production", "OpenAI Staging")
+  provider   String   // Provider name (e.g., "openai", "anthropic")
+  keyValue   String   @db.Text // Encrypted key value
+  isActive   Boolean  @default(true)
   lastUsedAt DateTime?
-  createdAt  DateTime  @default(now())
-  updatedAt  DateTime  @updatedAt
-  createdBy  String // User ID who created it
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  createdBy  String   // User ID who created it
 
   @@index([provider])
   @@index([isActive])

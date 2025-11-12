@@ -26,6 +26,12 @@ export default async function AdminPage() {
             <span className="text-sm text-muted-foreground">View and manage transcription jobs</span>
           </Button>
         </Link>
+        <Link href="/admin/api-keys">
+          <Button variant="outline" className="w-full h-24 flex flex-col gap-2">
+            <span className="text-lg font-semibold">API Keys</span>
+            <span className="text-sm text-muted-foreground">Manage OpenAI and other API keys</span>
+          </Button>
+        </Link>
       </div>
     </div>
   );
