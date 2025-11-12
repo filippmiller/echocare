@@ -90,7 +90,10 @@
   "journal": {
     "search": {
       "placeholder": "Search entries...",
-      "noResults": "No entries found"
+      "noResults": "No entries found",
+      "search": "Search",
+      "clear": "Clear",
+      "query": "Query"
     },
     "filters": {
       "tags": "Tags",

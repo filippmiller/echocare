@@ -90,7 +90,10 @@
   "journal": {
     "search": {
       "placeholder": "Поиск записей...",
-      "noResults": "Записи не найдены"
+      "noResults": "Записи не найдены",
+      "search": "Поиск",
+      "clear": "Очистить",
+      "query": "Запрос"
     },
     "filters": {
       "tags": "Теги",

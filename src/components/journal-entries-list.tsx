@@ -27,19 +27,42 @@ interface JournalEntry {
 interface JournalEntriesListProps {
   initialEntries: JournalEntry[];
   initialNextCursor: string | null;
+  searchFilters?: {
+    q?: string;
+    tags?: string[];
+    from?: string;
+    to?: string;
+  };
 }
 
-export function JournalEntriesList({ initialEntries, initialNextCursor }: JournalEntriesListProps) {
+export function JournalEntriesList({
+  initialEntries,
+  initialNextCursor,
+  searchFilters,
+}: JournalEntriesListProps) {
   const t = useTranslations("journal");
   const tCommon = useTranslations("common");
   const [entries, setEntries] = useState<JournalEntry[]>(initialEntries);
   const [nextCursor, setNextCursor] = useState<string | null>(initialNextCursor);
   const [isLoading, setIsLoading] = useState(false);
+  const [isSearchMode, setIsSearchMode] = useState(!!searchFilters);
 
   const refresh = useCallback(async () => {
     setIsLoading(true);
     try {
-      const response = await fetch("/api/journal/entries?limit=20");
+      let url = "/api/journal/entries?limit=20";
+      if (searchFilters) {
+        // Use search endpoint
+        const params = new URLSearchParams();
+        if (searchFilters.q) params.set("q", searchFilters.q);
+        if (searchFilters.tags?.length) params.set("tags", searchFilters.tags.join(","));
+        if (searchFilters.from) params.set("from", searchFilters.from);
+        if (searchFilters.to) params.set("to", searchFilters.to);
+        params.set("limit", "20");
+        url = `/api/journal/search?${params.toString()}`;
+      }
+
+      const response = await fetch(url);
       if (!response.ok) return;
 
       const data = (await response.json()) as {
@@ -55,7 +78,7 @@ export function JournalEntriesList({ initialEntries, initialNextCursor }: Journa
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [searchFilters]);
 
   // Listen for new entry creation events
   useEffect(() => {
@@ -74,7 +97,20 @@ export function JournalEntriesList({ initialEntries, initialNextCursor }: Journa
 
     setIsLoading(true);
     try {
-      const response = await fetch(`/api/journal/entries?limit=20&cursor=${nextCursor}`);
+      let url = `/api/journal/entries?limit=20&cursor=${nextCursor}`;
+      if (searchFilters) {
+        // Use search endpoint with cursor
+        const params = new URLSearchParams();
+        if (searchFilters.q) params.set("q", searchFilters.q);
+        if (searchFilters.tags?.length) params.set("tags", searchFilters.tags.join(","));
+        if (searchFilters.from) params.set("from", searchFilters.from);
+        if (searchFilters.to) params.set("to", searchFilters.to);
+        params.set("limit", "20");
+        params.set("cursor", nextCursor);
+        url = `/api/journal/search?${params.toString()}`;
+      }
+
+      const response = await fetch(url);
       if (!response.ok) return;
 
       const data = (await response.json()) as {
@@ -129,6 +165,18 @@ export function JournalEntriesList({ initialEntries, initialNextCursor }: Journa
                         <AudioPlayer audioId={entry.audio.id} duration={entry.audio.duration} />
                       </div>
                     ) : null}
+                    {entry.tags && entry.tags.length > 0 && (
+                      <div className="flex flex-wrap gap-1 mt-2">
+                        {entry.tags.map((tag, idx) => (
+                          <span
+                            key={idx}
+                            className="inline-block text-xs px-2 py-1 bg-muted rounded"
+                          >
+                            #{tag}
+                          </span>
+                        ))}
+                      </div>
+                    )}
                     {entry.mood && (
                       <span className="inline-block mt-2 text-xs px-2 py-1 bg-muted rounded">
                         Mood: {entry.mood}
