@@ -122,4 +122,12 @@ export const authOptions: NextAuthOptions = {
   secret: process.env.NEXTAUTH_SECRET,
 };
 
+if (!process.env.NEXTAUTH_SECRET) {
+  console.warn("⚠️ NEXTAUTH_SECRET is not set. Authentication may not work correctly.");
+}
+
+if (!process.env.NEXTAUTH_URL) {
+  console.warn("⚠️ NEXTAUTH_URL is not set. Authentication may not work correctly.");
+}
+
 export const getServerAuthSession = () => getServerSession(authOptions);
