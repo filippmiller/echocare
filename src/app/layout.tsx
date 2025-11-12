@@ -4,9 +4,10 @@ import "./globals.css";
 import { NextIntlClientProvider } from "next-intl";
 import { getMessages } from "next-intl/server";
 
-import { HeaderNav } from "@/components/header-nav";
+import { Header } from "@/components/layout/Header";
 import { Providers } from "@/app/providers";
 import { getServerAuthSession } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -33,6 +34,32 @@ export default async function RootLayout({
   const session = await getServerAuthSession();
   const messages = await getMessages();
 
+  // Get user profile data for header (if logged in)
+  let userName: string | null = null;
+  let userEmail: string | null = null;
+  let avatarUrl: string | null = null;
+
+  if (session) {
+    const user = await prisma.user.findUnique({
+      where: { id: session.user.id },
+      select: {
+        name: true,
+        email: true,
+      },
+    });
+
+    const profile = await prisma.profile.findUnique({
+      where: { userId: session.user.id },
+      select: {
+        avatarUrl: true,
+      },
+    });
+
+    userName = user?.name ?? null;
+    userEmail = user?.email ?? null;
+    avatarUrl = profile?.avatarUrl ?? null;
+  }
+
   return (
     <html lang="en" suppressHydrationWarning>
       <body
@@ -41,7 +68,7 @@ export default async function RootLayout({
         <NextIntlClientProvider messages={messages}>
           <Providers session={session}>
             <div className="flex min-h-screen flex-col">
-              <HeaderNav session={session} />
+              <Header session={session} userName={userName} userEmail={userEmail} avatarUrl={avatarUrl} />
               <main className="flex-1">{children}</main>
             </div>
           </Providers>

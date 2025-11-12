@@ -30,8 +30,17 @@
 - [x] Verified next-intl installed ✅
 - [x] Installed sonner for toasts ✅
 - [x] Verified shadcn/ui partially installed (button, card, form, input, label exist)
-- [ ] Need to check/add DropdownMenu component for avatar menu
-- [ ] Need to check/add Select component for forms
+- [x] Added DropdownMenu component ✅
+- [x] Added Select component ✅
+- [x] Committed dependencies
+
+#### Step 3: Creating New Header Component
+**Time:** 2025-11-12 - In Progress
+- [ ] Create `src/components/layout/Header.tsx` with modern design
+- [ ] Create `src/components/layout/LanguageSwitcher.tsx` (show only alternative)
+- [ ] Create `src/components/layout/UserMenu.tsx` (avatar dropdown with Profile, Settings, Sign out)
+- [ ] Fix auth logic (no Sign in/Sign up when logged in)
+- [ ] Integrate into layout
 
 ---
 
