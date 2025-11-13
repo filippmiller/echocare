@@ -53,6 +53,18 @@ export async function POST(request: Request) {
 
     // Check if bucket exists
     console.info(`[Audio Upload API] Checking bucket: ${JOURNAL_AUDIO_BUCKET}`);
+    
+    // Check environment variables
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+    console.info(`[Audio Upload API] Supabase URL: ${supabaseUrl ? 'SET' : 'MISSING'}`);
+    console.info(`[Audio Upload API] Supabase Key: ${supabaseKey ? 'SET' : 'MISSING'}`);
+    
+    if (!supabaseUrl || !supabaseKey) {
+      console.error("[Audio Upload API] Missing Supabase environment variables");
+      return internalServerError("Supabase configuration is missing. Please check NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY");
+    }
+    
     const supabaseAdmin = getSupabaseAdmin();
     
     // Validate Supabase client
@@ -66,6 +78,7 @@ export async function POST(request: Request) {
       return internalServerError("Supabase storage is not available");
     }
     
+    console.info("[Audio Upload API] Listing buckets...");
     const { data: buckets, error: bucketError } = await supabaseAdmin.storage.listBuckets();
     
     if (bucketError) {
