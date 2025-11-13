@@ -56,7 +56,20 @@
     "loadMore": "Load More",
     "audioNote": "Audio note",
     "play": "Play",
-    "pause": "Pause"
+    "pause": "Pause",
+    "search": {
+      "placeholder": "Search entries...",
+      "noResults": "No entries found",
+      "search": "Search",
+      "clear": "Clear",
+      "query": "Query"
+    },
+    "filters": {
+      "tags": "Tags",
+      "dateRange": "Date Range",
+      "from": "From",
+      "to": "To"
+    }
   },
   "errors": {
     "failedToLoad": "Failed to load",
@@ -85,21 +98,6 @@
       "transcribing": "Transcribing",
       "done": "Done",
       "error": "Error"
-    }
-  },
-  "journal": {
-    "search": {
-      "placeholder": "Search entries...",
-      "noResults": "No entries found",
-      "search": "Search",
-      "clear": "Clear",
-      "query": "Query"
-    },
-    "filters": {
-      "tags": "Tags",
-      "dateRange": "Date Range",
-      "from": "From",
-      "to": "To"
     }
   },
   "export": {

@@ -56,7 +56,20 @@
     "loadMore": "Загрузить еще",
     "audioNote": "Аудиозапись",
     "play": "Воспроизвести",
-    "pause": "Пауза"
+    "pause": "Пауза",
+    "search": {
+      "placeholder": "Поиск записей...",
+      "noResults": "Записи не найдены",
+      "search": "Поиск",
+      "clear": "Очистить",
+      "query": "Запрос"
+    },
+    "filters": {
+      "tags": "Теги",
+      "dateRange": "Диапазон дат",
+      "from": "С",
+      "to": "По"
+    }
   },
   "errors": {
     "failedToLoad": "Не удалось загрузить",
@@ -85,21 +98,6 @@
       "transcribing": "Транскрипция",
       "done": "Готово",
       "error": "Ошибка"
-    }
-  },
-  "journal": {
-    "search": {
-      "placeholder": "Поиск записей...",
-      "noResults": "Записи не найдены",
-      "search": "Поиск",
-      "clear": "Очистить",
-      "query": "Запрос"
-    },
-    "filters": {
-      "tags": "Теги",
-      "dateRange": "Диапазон дат",
-      "from": "С",
-      "to": "По"
     }
   },
   "export": {
