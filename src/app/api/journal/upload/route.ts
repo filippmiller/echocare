@@ -54,6 +54,18 @@ export async function POST(request: Request) {
     // Check if bucket exists
     console.info(`[Audio Upload API] Checking bucket: ${JOURNAL_AUDIO_BUCKET}`);
     const supabaseAdmin = getSupabaseAdmin();
+    
+    // Validate Supabase client
+    if (!supabaseAdmin) {
+      console.error("[Audio Upload API] Supabase admin client is null");
+      return internalServerError("Supabase client initialization failed");
+    }
+    
+    if (!supabaseAdmin.storage) {
+      console.error("[Audio Upload API] Supabase storage is undefined");
+      return internalServerError("Supabase storage is not available");
+    }
+    
     const { data: buckets, error: bucketError } = await supabaseAdmin.storage.listBuckets();
     
     if (bucketError) {
