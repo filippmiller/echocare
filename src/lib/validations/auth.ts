@@ -18,8 +18,12 @@ export const registerSchema = z
     phone: z
       .string()
       .trim()
-      .regex(phoneRegex, "Enter a valid phone number (e.g., +1234567890)")
-      .optional(),
+      .refine(
+        (val) => !val || phoneRegex.test(val),
+        "Enter a valid phone number (e.g., +1234567890)"
+      )
+      .optional()
+      .or(z.literal("")),
     password: z.string().min(8, "Password must be at least 8 characters"),
   })
   .refine((data) => data.email || data.phone, {
