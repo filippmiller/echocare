@@ -13,3 +13,4 @@
 2025-01-27T00:00:00.0000000+00:00 - Fixed database migration issue: Applied missing migrations (add_transcription_and_search, add_api_keys) to add summary column to JournalEntry table
 2025-01-27T00:00:00.0000000+00:00 - Added photo gallery feature: Created PhotoAsset model, migration, API endpoints (POST/GET /api/profile/photos, PUT /api/profile/avatar/select, DELETE /api/profile/photos/[id]), PhotoGallery component, and integrated into ProfileForm
 2025-01-27T00:00:00.0000000+00:00 - Added Service Catalog & Business Services module: Created models (City, BusinessAccount, Place, ServiceCategory, ServiceType, PlaceService), migrations, seed data, API endpoints for catalog and business management, business dashboard and services management pages
+2025-01-27T00:00:00.0000000+00:00 - Committed and pushed all changes: git add -A, git commit -m "cursor: Added photo gallery feature and service catalog & business services module", git push -u origin HEAD
