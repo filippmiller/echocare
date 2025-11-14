@@ -8,3 +8,8 @@
 2025-11-11T11:47:00.2194339+03:00 - Added prisma singleton helper
 2025-11-11T11:49:37.7158587+03:00 - Ran pnpm lint
 2025-11-11T12:33:27.0835125+03:00 - Added NextAuth configuration, register API, auth forms, layout, middleware, dashboard/admin pages
+2025-01-27T00:00:00.0000000+00:00 - Indexed codebase and created comprehensive analysis document (CODEBASE_ANALYSIS.md). Analyzed project structure, database schema, API endpoints, components, and current status. Branch: feat/ui-refresh-nav-lang
+2025-01-27T00:00:00.0000000+00:00 - Started dev server (pnpm dev on port 3005) and opened browser for testing
+2025-01-27T00:00:00.0000000+00:00 - Fixed database migration issue: Applied missing migrations (add_transcription_and_search, add_api_keys) to add summary column to JournalEntry table
+2025-01-27T00:00:00.0000000+00:00 - Added photo gallery feature: Created PhotoAsset model, migration, API endpoints (POST/GET /api/profile/photos, PUT /api/profile/avatar/select, DELETE /api/profile/photos/[id]), PhotoGallery component, and integrated into ProfileForm
+2025-01-27T00:00:00.0000000+00:00 - Added Service Catalog & Business Services module: Created models (City, BusinessAccount, Place, ServiceCategory, ServiceType, PlaceService), migrations, seed data, API endpoints for catalog and business management, business dashboard and services management pages

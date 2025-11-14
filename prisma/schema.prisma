@@ -12,6 +12,7 @@ datasource db {
 enum Role {
   ADMIN
   USER
+  BUSINESS_OWNER
 }
 
 enum Gender {
@@ -53,6 +54,8 @@ model User {
   updatedAt      DateTime       @updatedAt
   profile        Profile?
   journalEntries JournalEntry[]
+  photos         PhotoAsset[]
+  businessAccount BusinessAccount?
 }
 
 model Profile {
@@ -146,4 +149,136 @@ model ApiKey {
   @@index([provider])
   @@index([isActive])
   @@index([provider, isActive])
+}
+
+model PhotoAsset {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  bucket    String
+  path      String
+  mime      String
+  size      Int
+  width     Int?
+  height    Int?
+  createdAt DateTime @default(now())
+
+  @@index([userId, createdAt(sort: Desc)])
+}
+
+enum ServicePricingUnit {
+  PER_SERVICE
+  PER_ITEM
+  PER_HOUR
+}
+
+model City {
+  id        String   @id @default(cuid())
+  code      String   @unique // internal code: SPB, MSK
+  nameRu    String
+  nameEn    String
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  places Place[]
+
+  @@index([code])
+}
+
+model BusinessAccount {
+  id        String   @id @default(cuid())
+  userId    String   @unique
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  companyName String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  places Place[]
+}
+
+model Place {
+  id          String   @id @default(cuid())
+  businessId String
+  business    BusinessAccount @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  cityId      String
+  city        City     @relation(fields: [cityId], references: [id], onDelete: Restrict)
+  name        String
+  address     String?
+  status      String   @default("pending") // pending, approved, published
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  services PlaceService[]
+
+  @@index([businessId])
+  @@index([cityId])
+}
+
+model ServiceCategory {
+  id        String   @id @default(cuid())
+  code      String   @unique // internal code: BEAUTY, DRY_CLEANING, KEYS_SHOES
+  nameRu    String
+  nameEn    String
+  icon      String?  // название иконки, например "scissors", "tshirt"
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  serviceTypes ServiceType[]
+
+  @@index([code])
+  @@index([sortOrder])
+}
+
+model ServiceType {
+  id          String             @id @default(cuid())
+  categoryId  String
+  category    ServiceCategory    @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+
+  code        String             @unique // internal: female_haircut, dry_cleaning_coat
+  nameRu      String
+  nameEn      String
+  shortDescription String?       @db.Text
+
+  defaultDurationMinutes Int?
+  pricingUnit ServicePricingUnit @default(PER_SERVICE)
+  isActive    Boolean            @default(true)
+
+  placeServices PlaceService[]
+
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
+
+  @@index([categoryId])
+  @@index([code])
+  @@index([isActive])
+}
+
+model PlaceService {
+  id            String       @id @default(cuid())
+  placeId       String
+  place         Place        @relation(fields: [placeId], references: [id], onDelete: Cascade)
+
+  serviceTypeId String
+  serviceType   ServiceType  @relation(fields: [serviceTypeId], references: [id], onDelete: Restrict)
+
+  priceFrom     Decimal?     @db.Decimal(10, 2)
+  priceTo       Decimal?     @db.Decimal(10, 2)
+  currency      String       @default("RUB")
+
+  durationMinutes Int?
+
+  isActive      Boolean      @default(true)
+  isSpecialOffer Boolean     @default(false)
+  specialLabel  String?
+  notes         String?      @db.Text
+
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+
+  @@index([placeId])
+  @@index([serviceTypeId])
+  @@index([isActive])
+  @@unique([placeId, serviceTypeId])
 }

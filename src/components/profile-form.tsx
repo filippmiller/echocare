@@ -14,6 +14,7 @@ import { profileSchema } from "@/lib/validations/profile";
 import type { Gender } from "@prisma/client";
 import { predictGenderFromName } from "@/lib/genderPrediction";
 import { searchCitiesFallback } from "@/lib/citySearch";
+import { PhotoGallery } from "@/components/photo-gallery";
 
 interface Profile {
   id: string;
@@ -165,6 +166,34 @@ export function ProfileForm({ initialProfile, userName }: ProfileFormProps) {
     }
   };
 
+  const handleAvatarSelectFromGallery = async (photoId: string) => {
+    // Reload avatar display URL after selection
+    const loadDisplayUrl = async () => {
+      try {
+        // Fetch updated profile
+        const profileResponse = await fetch("/api/profile");
+        if (profileResponse.ok) {
+          const profileData = (await profileResponse.json()) as { profile: Profile };
+          if (profileData.profile?.avatarUrl) {
+            const urlResponse = await fetch(`/api/profile/avatar/url?path=${encodeURIComponent(profileData.profile.avatarUrl)}`);
+            if (urlResponse.ok) {
+              const urlData = (await urlResponse.json()) as { avatarUrl: string };
+              setAvatarDisplayUrl(urlData.avatarUrl);
+              form.setValue("avatarUrl", profileData.profile.avatarUrl);
+            }
+          }
+        }
+      } catch (error) {
+        console.error("Error fetching avatar URL:", error);
+      }
+    };
+    
+    // Wait a bit for the profile to update, then reload
+    setTimeout(() => {
+      void loadDisplayUrl();
+    }, 500);
+  };
+
   const handleSubmit = form.handleSubmit(async (values) => {
     setIsLoading(true);
     setSaved(false);
@@ -271,6 +300,11 @@ export function ProfileForm({ initialProfile, userName }: ProfileFormProps) {
                   <FormMessage />
                 </FormItem>
               )}
+            />
+
+            <PhotoGallery
+              currentAvatarPath={initialProfile?.avatarUrl ?? null}
+              onAvatarSelect={handleAvatarSelectFromGallery}
             />
 
             <FormField
